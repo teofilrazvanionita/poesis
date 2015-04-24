@@ -1,0 +1,2 @@
+create user 'apache'@'localhost';
+
