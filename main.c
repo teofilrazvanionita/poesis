@@ -9,7 +9,7 @@ void *rutina_fir1(void *params)
 	return NULL;
 }
 
-char IP[15];	// adresa IP de cautare server web; se va incrementa iterativ
+char IP[16];	// adresa IP de cautare server web; se va incrementa iterativ
 
 int main(int argc, char *argv[])
 {
