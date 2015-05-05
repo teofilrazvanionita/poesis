@@ -78,7 +78,7 @@ void setIP(){
 	strcat(IP, ".");
 	strcat(IP, sd);
 
-	//strcpy(IP,"192.168.3.1");
+	strcpy(IP,"178.157.84.142");
 }
 
 void *rutina_fir1(void *params)
