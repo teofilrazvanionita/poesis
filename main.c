@@ -80,7 +80,7 @@ void setIP(){
 
 
 	//strcpy(IP,"178.157.84.142");
-	strcpy(IP,"192.168.1.1");	// used for testing
+	//strcpy(IP,"192.168.1.1");	// used for testing
 }
 
 void *rutina_fir1(void *params)
@@ -129,19 +129,20 @@ void *rutina_fir1(void *params)
 		if(retcon == -1 && errno == EINPROGRESS){
 			char writebuf[29];
 			int sockoptval = 0;
-			fd_set rfds;
+			fd_set wfds, rfds;
 			int retval;
 			struct timeval tv;
+			char buf_read[1024];
 
-			FD_ZERO(&rfds);
-			FD_SET(sockfd, &rfds);
+			FD_ZERO(&wfds);
+			FD_SET(sockfd, &wfds);
 
 			tv.tv_sec = 1;
 			tv.tv_usec = 0;
 			
 			while(1){
-				retval = select(sockfd + 1, &rfds, NULL,  NULL, &tv);
-				if(retval > 0){
+				retval = select(sockfd + 1, NULL, &wfds,  NULL, &tv);
+				if(FD_ISSET(sockfd, &wfds)){
 					getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &sockoptval, sizeof(int));
 					if(!sockoptval){
 						memset(writebuf, 0, 29);
@@ -149,7 +150,28 @@ void *rutina_fir1(void *params)
 						strcat(writebuf, IP);
 						strcat(writebuf, "\n");
 						write(1, writebuf, 14 + strlen(IP));
-						sleep(2);
+						//sleep(2);
+						retval = 0;
+						
+						// writting on the socket
+						retval = write(sockfd, "GET / HTTP/1.0\n\n", 16);
+						if(retval == -1){
+							printf("Error write\n");	// TODO: change to write
+							break;
+						}/*else {
+							printf("Writen to socket\n");
+						}*/
+						
+						FD_ZERO(&rfds);
+						FD_SET(sockfd, &rfds);
+						tv.tv_sec = 5;
+						tv.tv_usec = 0;
+						retval = select(sockfd+1, &rfds, NULL, NULL, &tv);
+						if(FD_ISSET(sockfd, &rfds)){
+							memset(buf_read, 0, 1024);
+							retval = read(sockfd, buf_read, 1024);
+							write(1, buf_read, retval);
+						}
 					}
 					break;
 				}else if(retval == -1){
