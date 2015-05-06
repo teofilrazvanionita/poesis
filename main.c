@@ -78,7 +78,9 @@ void setIP(){
 	strcat(IP, ".");
 	strcat(IP, sd);
 
-	strcpy(IP,"178.157.84.142");
+
+	//strcpy(IP,"178.157.84.142");
+	strcpy(IP,"192.168.1.1");	// used for testing
 }
 
 void *rutina_fir1(void *params)
@@ -116,24 +118,45 @@ void *rutina_fir1(void *params)
 		retcon = connect(sockfd, (struct sockaddr *)&dest_addr, sizeof(struct sockaddr));
 		if (retcon == -1){
 			if(errno == ECONNREFUSED){
+				write(1, "Connection refused\n", 19);
 				continue;
 			}
 
-		}else{
-			continue;
 		}
 	
 	// processing here ...
 
-		if(!retcon){
+		if(retcon == -1 && errno == EINPROGRESS){
 			char writebuf[29];
-		
-			memset(writebuf, 0, 29);
-			strcat(writebuf, "Connected to ");	// possible reentrancy issues!
-			strcat(writebuf, IP);
-			strcat(writebuf, "\n");
-			write(1, writebuf, 14 + strlen(IP));
-			sleep(2);
+			int sockoptval = 0;
+			fd_set rfds;
+			int retval;
+			struct timeval tv;
+
+			FD_ZERO(&rfds);
+			FD_SET(sockfd, &rfds);
+
+			tv.tv_sec = 1;
+			tv.tv_usec = 0;
+			
+			while(1){
+				retval = select(sockfd + 1, &rfds, NULL,  NULL, &tv);
+				if(retval > 0){
+					getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &sockoptval, sizeof(int));
+					if(!sockoptval){
+						memset(writebuf, 0, 29);
+						strcat(writebuf, "Connected to ");	// possible reentrancy issues!
+						strcat(writebuf, IP);
+						strcat(writebuf, "\n");
+						write(1, writebuf, 14 + strlen(IP));
+						sleep(2);
+					}
+					break;
+				}else if(retval == -1){
+					perror("select");
+				}
+				break;
+			}
 		}
 
 		if(!retcon && (shutdown(sockfd,SHUT_RDWR) == -1)){
