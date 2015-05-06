@@ -172,8 +172,9 @@ void *rutina_fir1(void *params)
 							retval = read(sockfd, buf_read, 1024);
 							write(1, buf_read, retval);
 						}
+						break;
 					}
-					break;
+					continue;
 				}else if(retval == -1){
 					perror("select");
 				}
