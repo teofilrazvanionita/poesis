@@ -169,7 +169,7 @@ void *rutina_fir1(void *params)
 						tv.tv_usec = 0;
 						retval = select(sockfd+1, &rfds, NULL, NULL, &tv);
 						if(FD_ISSET(sockfd, &rfds)){
-							memset(buf_read, 0, 1024);
+							memset(buf_read, 0,8192);
 							retval = 0;
 							while((read_count = read(sockfd, buf_read, 8192)) != 0){
 								if(read_count == -1){
