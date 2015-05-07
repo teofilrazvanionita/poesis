@@ -79,7 +79,7 @@ void setIP(){
 	strcat(IP, sd);
 
 
-	//strcpy(IP,"178.157.84.142");
+	//strcpy(IP,"64.140.100.225");
 	//strcpy(IP,"192.168.1.1");	// used for testing
 }
 
@@ -131,8 +131,9 @@ void *rutina_fir1(void *params)
 			int sockoptval = 0;
 			fd_set wfds, rfds;
 			int retval;
+			ssize_t read_count;
 			struct timeval tv;
-			char buf_read[1024];
+			char buf_read[8192];
 
 			FD_ZERO(&wfds);
 			FD_SET(sockfd, &wfds);
@@ -156,7 +157,7 @@ void *rutina_fir1(void *params)
 						// writting on the socket
 						retval = write(sockfd, "GET / HTTP/1.0\n\n", 16);
 						if(retval == -1){
-							printf("Error write\n");	// TODO: change to write
+							write(1, "No HTTP Daemon found\n", 21);
 							break;
 						}/*else {
 							printf("Writen to socket\n");
@@ -169,8 +170,23 @@ void *rutina_fir1(void *params)
 						retval = select(sockfd+1, &rfds, NULL, NULL, &tv);
 						if(FD_ISSET(sockfd, &rfds)){
 							memset(buf_read, 0, 1024);
-							retval = read(sockfd, buf_read, 1024);
-							write(1, buf_read, retval);
+							retval = 0;
+							while((read_count = read(sockfd, buf_read, 8192)) != 0){
+								if(read_count == -1){
+									if(errno == EAGAIN){
+										write(1, "Resource temporary anavailable, continuing...\n", 46);
+										sleep(3);
+										continue;
+									}
+									perror("read");
+									exit(EXIT_FAILURE);	// v. pthread_exit
+								}
+								if(write(1, buf_read, read_count) != read_count){
+									perror("write");
+									exit(EXIT_FAILURE);	// v. pthread_exit
+								}
+							}
+							sleep(2);
 						}
 						break;
 					}
