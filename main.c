@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <time.h>
 #include <errno.h>
@@ -79,7 +80,7 @@ void setIP(){
 	strcat(IP, sd);
 
 
-	//strcpy(IP,"64.140.100.225");
+	//strcpy(IP,"202.233.19.237");
 	//strcpy(IP,"192.168.1.1");	// used for testing
 }
 
@@ -119,18 +120,19 @@ void *rutina_fir1(void *params)
 		if (retcon == -1){
 			if(errno == ECONNREFUSED){
 				write(1, "Connection refused\n", 19);
+				if(close(sockfd) == -1){
+					perror("close");
+					exit(EXIT_FAILURE);	// v. pthread_exit
+				}
 				continue;
 			}
-
 		}
 	
-	// processing here ...
-
 		if(retcon == -1 && errno == EINPROGRESS){
 			char writebuf[29];
 			int sockoptval = 0;
+			socklen_t sockoptsize;
 			fd_set wfds, rfds;
-			int retval;
 			ssize_t read_count;
 			struct timeval tv;
 			char buf_read[8192];
@@ -140,37 +142,45 @@ void *rutina_fir1(void *params)
 
 			tv.tv_sec = 1;
 			tv.tv_usec = 0;
+
+			sockoptsize = sizeof(sockoptval);
 			
 			while(1){
-				retval = select(sockfd + 1, NULL, &wfds,  NULL, &tv);
+				if(select(sockfd + 1, NULL, &wfds,  NULL, &tv) == -1){
+					perror("select");
+					exit(EXIT_FAILURE);	// v. pthread_exit
+				}
 				if(FD_ISSET(sockfd, &wfds)){
-					getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &sockoptval, sizeof(int));
+					if(getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &sockoptval, &sockoptsize) == -1){
+						perror("getsockopt");
+						exit(EXIT_FAILURE);	// v. pthread_exit
+					}
 					if(!sockoptval){
 						memset(writebuf, 0, 29);
 						strcat(writebuf, "Connected to ");	// possible reentrancy issues!
 						strcat(writebuf, IP);
 						strcat(writebuf, "\n");
-						write(1, writebuf, 14 + strlen(IP));
-						//sleep(2);
-						retval = 0;
+						if(write(1, writebuf, 14 + strlen(IP)) == -1){
+							perror("write");
+							exit(EXIT_FAILURE);	// v. pthread_exit or _exit()
+						}
 						
 						// writting on the socket
-						retval = write(sockfd, "GET / HTTP/1.0\n\n", 16);
-						if(retval == -1){
+						if(write(sockfd, "GET / HTTP/1.0\n\n", 16) == -1){
 							write(1, "No HTTP Daemon found\n", 21);
 							break;
-						}/*else {
-							printf("Writen to socket\n");
-						}*/
+						}
 						
 						FD_ZERO(&rfds);
 						FD_SET(sockfd, &rfds);
 						tv.tv_sec = 5;
 						tv.tv_usec = 0;
-						retval = select(sockfd+1, &rfds, NULL, NULL, &tv);
+						if(select(sockfd+1, &rfds, NULL, NULL, &tv) == -1){
+							perror("select");
+							exit(EXIT_FAILURE);	// v. pthread_exit
+						}
 						if(FD_ISSET(sockfd, &rfds)){
 							memset(buf_read, 0,8192);
-							retval = 0;
 							while((read_count = read(sockfd, buf_read, 8192)) != 0){
 								if(read_count == -1){
 									if(errno == EAGAIN){
@@ -190,26 +200,17 @@ void *rutina_fir1(void *params)
 						}
 						break;
 					}
-					continue;
-				}else if(retval == -1){
-					perror("select");
+					break;
 				}
 				break;
 			}
 		}
 
-		if(!retcon && (shutdown(sockfd,SHUT_RDWR) == -1)){
-			
-			perror("shutdown");
-			exit(EXIT_FAILURE);	// v. pthread_exit
-		}
-		
 		if(close(sockfd) == -1){
 			perror("close");
 			exit(EXIT_FAILURE);	// v. pthread_exit
 		}
 
-		//sleep((unsigned int)1);
 	}
 	return NULL;
 }
