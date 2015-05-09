@@ -80,7 +80,7 @@ void setIP(){
 	strcat(IP, sd);
 
 
-	//strcpy(IP,"202.233.19.237");
+	//strcpy(IP,"95.60.98.201");
 	//strcpy(IP,"192.168.1.1");	// used for testing
 }
 
@@ -167,7 +167,10 @@ void *rutina_fir1(void *params)
 						
 						// writting on the socket
 						if(write(sockfd, "GET / HTTP/1.0\n\n", 16) == -1){
-							write(1, "No HTTP Daemon found\n", 21);
+							if(write(1, "Error writing on socket\n", 24) == -1){
+								perror("write");
+								exit(EXIT_FAILURE);		// v. pthread_exit
+							}
 							break;
 						}
 						
@@ -188,6 +191,9 @@ void *rutina_fir1(void *params)
 										sleep(3);
 										continue;
 									}
+									if(errno == ECONNRESET){
+										continue;
+									}
 									perror("read");
 									exit(EXIT_FAILURE);	// v. pthread_exit
 								}
@@ -195,6 +201,10 @@ void *rutina_fir1(void *params)
 									perror("write");
 									exit(EXIT_FAILURE);	// v. pthread_exit
 								}
+							}
+							if(errno != ECONNRESET && (shutdown(sockfd, SHUT_RDWR) == -1)){
+								perror("shutdown");
+								exit(EXIT_FAILURE);		// v. phread_exit
 							}
 							sleep(2);
 						}
