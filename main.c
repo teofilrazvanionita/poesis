@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/socket.h>
@@ -183,7 +184,32 @@ void *rutina_fir1(void *params)
 							exit(EXIT_FAILURE);	// v. pthread_exit
 						}
 						if(FD_ISSET(sockfd, &rfds)){
+							int ipIndexHtml_fd;
+
+							// open and create file "ip-index-html"
+							if((ipIndexHtml_fd = open("ip-index-html", O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR)) == -1){
+								perror("open");
+								exit(EXIT_FAILURE);	// v. pthread_exit
+							}
+							
+							if(ftruncate(ipIndexHtml_fd, 0) == -1){
+								perror("ftruncate");
+								exit(EXIT_FAILURE);	// v. pthread_exit
+							}
+
+							// write IP address on first line of the file
+							if(write(ipIndexHtml_fd, IP, strlen(IP)) == -1){
+								perror("write");
+								exit(EXIT_FAILURE);	// v. pthread_exit
+							}
+							if(write(ipIndexHtml_fd, "\n", 1) == -1){
+								perror("write");
+								exit(EXIT_FAILURE);	// v. pthred_exit or _exit
+							}
+							
+							// clear de buffer for used reading from the socket
 							memset(buf_read, 0,8192);
+							
 							while((read_count = read(sockfd, buf_read, 8192)) != 0){
 								if(read_count == -1){
 									if(errno == EAGAIN){
@@ -197,16 +223,27 @@ void *rutina_fir1(void *params)
 									perror("read");
 									exit(EXIT_FAILURE);	// v. pthread_exit
 								}
-								if(write(1, buf_read, read_count) != read_count){
+								
+								// write into the file
+								if(write(ipIndexHtml_fd, buf_read, read_count) != read_count){
 									perror("write");
 									exit(EXIT_FAILURE);	// v. pthread_exit
 								}
+							}
+							
+							if(write(1, "Written to ip-index-html\n", 25) == -1){
+								perror("write");
+								exit(EXIT_FAILURE);		// v. pthread_exit, _exit...
+							}	
+							if(close(ipIndexHtml_fd) == -1){
+								perror("close");
+								exit(EXIT_FAILURE);		// v. pthread_exit or _exit
 							}
 							if(errno != ECONNRESET && (shutdown(sockfd, SHUT_RDWR) == -1)){
 								perror("shutdown");
 								exit(EXIT_FAILURE);		// v. phread_exit
 							}
-							sleep(2);
+							sleep(20);
 						}
 						break;
 					}
