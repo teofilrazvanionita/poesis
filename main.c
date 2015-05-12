@@ -86,7 +86,7 @@ void setIP(){
 	strcat(IP, sd);
 
 
-	//strcpy(IP,"95.60.98.201");
+	//strcpy(IP,"80.51.212.30");
 	//strcpy(IP,"192.168.1.1");	// used for testing
 }
 
@@ -242,7 +242,13 @@ void *rutina_fir1(void *params)
 								ERROR("close");
 								exit(EXIT_FAILURE);		// v. pthread_exit or _exit
 							}
-							if(errno != ECONNRESET && (shutdown(sockfd, SHUT_RDWR) == -1)){
+
+							if(system("./parseIPIndexHtml.pl") == -1){
+								ERROR("system");
+								exit(EXIT_FAILURE);		// v. pthread_exit
+							}
+							
+							if((shutdown(sockfd, SHUT_RDWR) == -1) && (errno != ECONNRESET) && (errno != ENOTCONN)){
 								ERROR("shutdown");
 								exit(EXIT_FAILURE);		// v. phread_exit
 							}
