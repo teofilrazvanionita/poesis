@@ -6,7 +6,7 @@ use DBI;
 my $DSN = "dbi:mysql:dbname=poesis";
 
 my $user = "razvan";
-my $pass = "*******";
+my $pass = "iMOri77ss";
 my $dbh;
 my $sth;
 
