@@ -14,7 +14,7 @@ my $sth;
 
 my ($IP, $title, $status);
 
-my @links;	# tabloul cu linkurile gasite
+my @linkuri;	# tabloul cu linkurile gasite
 
 my $bigstring;
 
@@ -43,9 +43,16 @@ if($#lines >= 2){
 			
 			# insert the obtained info into the database;
 			$dbh = DBI->connect($DSN, $user, $pass) or die "Conectare esuata: $DBI::errstr\n" unless $dbh;
+			
+			$sth = $dbh->prepare("START TRANSACTION");
+			$sth->execute();
+
 			$sth = $dbh->prepare("INSERT INTO pagini_html VALUES (NULL, '$IP', '$title');");
 			$sth->execute();
-			$sth->finish();
+			$sth = $dbh->prepare("SELECT \@idp:=LAST_INSERT_ID()");
+			$sth->execute();
+
+
 		}
 	}
 }
@@ -55,9 +62,31 @@ if(defined($title)){
 	@ARGV = ("ip-index-html");
 	while(<>){
 		if(/href=(["']{1})(http(s?):\/\/.+\.(s?)html)\1/){
-			print "\t$2\n";
+			#print $_;
+			my $strlength = length $_;
+			my $count = 24;
+			my $partstr = $_;
+			while($count <= $strlength){
+				$partstr = substr($_, 0, $count);
+				if($partstr =~ /href=(["']{1})(http(s?):\/\/.+\.(s?)html)\1/){
+					push @linkuri, $2;
+					print "\t$2\n";
+					$strlength = $strlength - $count;
+					$_ = substr($_, $count, $strlength);
+					$count = 23;
+				}
+				$count++;	
+			}	
 		}
-	}
-}
 
+	}
+	foreach my $legatura (@linkuri){
+		$sth = $dbh->prepare("INSERT INTO referinte_html VALUES (NULL, \@idp, '$legatura');");
+		$sth->execute();
+	}
+	$sth = $dbh->prepare("COMMIT");
+	$sth->execute();
+	$sth->finish();
+	$dbh->disconnect;
+}
 
