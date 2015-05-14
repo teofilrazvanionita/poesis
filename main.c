@@ -86,7 +86,7 @@ void setIP(){
 	strcat(IP, sd);
 
 
-	//strcpy(IP,"80.51.212.30");
+	//strcpy(IP,"201.48.106.179");
 	//strcpy(IP,"192.168.1.1");	// used for testing
 }
 
@@ -172,7 +172,7 @@ void *rutina_fir1(void *params)
 						}
 						
 						// writting on the socket
-						if(write(sockfd, "GET / HTTP/1.0\n\n", 16) == -1){
+						if(write(sockfd, "GET / HTTP/1.0\nUser-Agent: poesis/1.0\n\n", 39) == -1){
 							if(write(STDOUT_FILENO, "Error writing on socket\n", 24) == -1){
 								ERROR("write");
 								exit(EXIT_FAILURE);		// v. pthread_exit
