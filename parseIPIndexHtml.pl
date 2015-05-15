@@ -62,25 +62,17 @@ if(defined($title)){
 	@ARGV = ("ip-index-html");
 	while(<>){
 		if(/href=(["']{1})(http(s?):\/\/.+\.(s?)html)\1/){
-			#print $_;
-			my $strlength = length $_;
-			my $count = 24;
-			my $partstr = $_;
-			while($count <= $strlength){
-				$partstr = substr($_, 0, $count);
-				if($partstr =~ /href=(["']{1})(http(s?):\/\/.+\.(s?)html)\1/){
-					$2 =~ s/"/\\\"/g;
-					$2 =~ s/'/\\\'/g;
-					push @linkuri, $2;
-					print "\t$2\n";
-					$strlength = $strlength - $count;
-					$_ = substr($_, $count, $strlength);
-					$count = 23;
+			my @items = split /<\/a>/;
+			foreach my $i (@items){
+				if($i =~ /href=(["']{1})(http(s?):\/\/.+\.(s?)html)\1/){
+					my $hiperlink = $2;
+					$hiperlink =~ s/"/\\\"/g;
+					$hiperlink =~ s/'/\\\'/g;
+					push @linkuri, $hiperlink;
+					print "\t$hiperlink\n";
 				}
-				$count++;	
 			}	
 		}
-
 	}
 	foreach my $legatura (@linkuri){
 		$sth = $dbh->prepare("INSERT INTO referinte_html VALUES (NULL, \@idp, '$legatura');");
