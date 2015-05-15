@@ -11,7 +11,7 @@
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <time.h>
-#include <signal.h>
+//#include <signal.h>
 #include <errno.h>
 
 #define DEST_PORT 80
@@ -22,13 +22,14 @@
 
 char IP[16];	// adresa IP de cautare server web; se va incrementa iterativ
 char temp[32];	// used for printing eror messages; adjust dimension as needed
-
+/*
 static volatile sig_atomic_t gotAlarm = 0;	// Set nonzero on receipt of SIGALRM
 
 static void sigAlrmHandler(int sig){	// SIGALRM Handler
+	write(STDOUT_FILENO, "Got SIGALRM\n", 12);
 	gotAlarm = 1;
 }
-
+*/
 unsigned char fillRand(){
 	int fd_devurand, readcount;
 	char read_buf;
@@ -93,7 +94,7 @@ void setIP(){
 	strcat(IP, sd);
 
 
-	//strcpy(IP,"204.3.200.21");
+	//strcpy(IP,"77.255.26.169");
 	//strcpy(IP,"192.168.1.1");	// used for testing
 }
 
@@ -101,7 +102,7 @@ void *rutina_fir1(void *params)
 {
 	int sockfd, retcon, flags;
 	struct sockaddr_in dest_addr;
-
+/*
 	struct sigaction sa;	// establish a handler fot SIGALRM
 										
 	sigemptyset(&sa.sa_mask);
@@ -112,7 +113,7 @@ void *rutina_fir1(void *params)
 		ERROR("sigaction");
 		exit(EXIT_FAILURE);	// v. pthread_exit
 	}
-
+*/
 	while(1){
 		setIP();	
 
@@ -206,6 +207,7 @@ void *rutina_fir1(void *params)
 						}
 						if(FD_ISSET(sockfd, &rfds)){
 							int ipIndexHtml_fd;
+							int k = 0;
 							//int savedErrno;
 
 							// open and create file "ip-index-html"
@@ -230,21 +232,27 @@ void *rutina_fir1(void *params)
 							while((read_count = read(sockfd, buf_read, 8192)) != 0){
 								if(read_count == -1){
 									if(errno == EAGAIN){
-										alarm(5);	/* trimite SIGALRM dupa 20 sec pentru a asigura iesirea
-												   din ciclu chiar si cand acesta devine infinit */
+										k++;	// loop EAGAIN counter
+										
+										/*
+										alarm(5);	// trimite SIGALRM dupa 20 sec pentru a asigura iesirea
+												//   din ciclu chiar si cand acesta devine infinit 
 											
 										if(gotAlarm){
 											gotAlarm = 0;
 											break;
 										}
+										*/
 
-
+										if(k >= 3){
+											break;
+										}
 										if(write(STDOUT_FILENO, "Resource temporary anavailable, continuing...\n", 46) == -1){
 											ERROR("write");
 											exit(EXIT_FAILURE);	// v. pthread_exit
 										}
-										//sleep(3);
-										continue;
+										sleep(2);
+										continue;	
 									}
 									if(errno == ECONNRESET){
 										continue;
@@ -260,8 +268,6 @@ void *rutina_fir1(void *params)
 								}
 							}
 							
-							gotAlarm = 0;
-							alarm(0);	// cancel any pending alarm
 
 							if(write(STDOUT_FILENO, "Written to ip-index-html\n", 25) == -1){
 								ERROR("write");
