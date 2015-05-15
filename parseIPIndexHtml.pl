@@ -69,6 +69,8 @@ if(defined($title)){
 			while($count <= $strlength){
 				$partstr = substr($_, 0, $count);
 				if($partstr =~ /href=(["']{1})(http(s?):\/\/.+\.(s?)html)\1/){
+					$2 =~ s/"/\\\"/g;
+					$2 =~ s/'/\\\'/g;
 					push @linkuri, $2;
 					print "\t$2\n";
 					$strlength = $strlength - $count;
