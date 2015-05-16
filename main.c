@@ -94,7 +94,7 @@ void setIP(){
 	strcat(IP, sd);
 
 
-	//strcpy(IP,"119.90.58.85");
+	//strcpy(IP,"195.244.63.8");
 	//strcpy(IP,"192.168.1.1");	// used for testing
 }
 

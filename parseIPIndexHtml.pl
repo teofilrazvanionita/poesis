@@ -61,17 +61,29 @@ if($#lines >= 2){
 if(defined($title)){
 	@ARGV = ("ip-index-html");
 	while(<>){
-		if(/href=(["']{1})(http(s?):\/\/.+\.(s?)html)\1/){
-			my @items = split /<\/a>/;
-			foreach my $i (@items){
-				if($i =~ /href=(["']{1})(http(s?):\/\/.+\.(s?)html)\1/){
+		if(/href=(["']{1})\s*(http(s?):\/\/.+\.(s?)html)\s*\1/i){
+			if(/<\/a>/i){
+				my @items = split /(<\/a>)|(<\/A>)/;
+				foreach my $i (@items){
+					if(defined($i)){
+						if($i =~ /href=(["']{1})\s*(http(s?):\/\/.+\.(s?)html)\s*\1/i){
+							my $hiperlink = $2;
+							$hiperlink =~ s/"/\\\"/g;
+							$hiperlink =~ s/'/\\\'/g;
+							push @linkuri, $hiperlink;
+							print "\t$hiperlink\n";
+						}
+					}
+				}	
+			}else{
+				#if(/href=(["']{1})\s*(http(s?):\/\/.+\.(s?)html)\s*\1/i){
 					my $hiperlink = $2;
 					$hiperlink =~ s/"/\\\"/g;
 					$hiperlink =~ s/'/\\\'/g;
 					push @linkuri, $hiperlink;
 					print "\t$hiperlink\n";
-				}
-			}	
+				#}
+			}
 		}
 	}
 	foreach my $legatura (@linkuri){
