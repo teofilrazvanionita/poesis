@@ -94,7 +94,7 @@ void setIP(){
 	strcat(IP, sd);
 
 
-	//strcpy(IP,"195.244.63.8");
+	//strcpy(IP,"188.164.254.142");
 	//strcpy(IP,"192.168.1.1");	// used for testing
 }
 
@@ -164,7 +164,7 @@ void *rutina_fir1(void *params)
 			FD_SET(sockfd, &wfds);
 
 			tv.tv_sec = 1;
-			tv.tv_usec = 0;
+			tv.tv_usec = 500000;
 
 			sockoptsize = sizeof(sockoptval);
 			

@@ -61,12 +61,12 @@ if($#lines >= 2){
 if(defined($title)){
 	@ARGV = ("ip-index-html");
 	while(<>){
-		if(/href=(["']{1})\s*(http(s?):\/\/.+\.(s?)html)\s*\1/i){
+		if(/href=(["']{1})\s*(http(s?):\/\/[^"'>]+\.(s?)html)\s*\1/i){
 			if(/<\/a>/i){
 				my @items = split /(<\/a>)|(<\/A>)/;
 				foreach my $i (@items){
 					if(defined($i)){
-						if($i =~ /href=(["']{1})\s*(http(s?):\/\/.+\.(s?)html)\s*\1/i){
+						if($i =~ /href=(["']{1})\s*(http(s?):\/\/[^"'>]+\.(s?)html)\s*\1/i){
 							my $hiperlink = $2;
 							$hiperlink =~ s/"/\\\"/g;
 							$hiperlink =~ s/'/\\\'/g;
@@ -76,7 +76,7 @@ if(defined($title)){
 					}
 				}	
 			}else{
-				#if(/href=(["']{1})\s*(http(s?):\/\/.+\.(s?)html)\s*\1/i){
+				#if(/href=(["']{1})\s*(http(s?):\/\/[^"'>]+\.(s?)html)\s*\1/i){
 					my $hiperlink = $2;
 					$hiperlink =~ s/"/\\\"/g;
 					$hiperlink =~ s/'/\\\'/g;
