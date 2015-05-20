@@ -164,7 +164,7 @@ void *rutina_fir1(void *params)
 			FD_SET(sockfd, &wfds);
 
 			tv.tv_sec = 1;
-			tv.tv_usec = 500000;
+			tv.tv_usec = 0;
 
 			sockoptsize = sizeof(sockoptval);
 			

@@ -16,45 +16,70 @@ my ($IP, $title, $status);
 
 my @linkuri;	# tabloul cu linkurile gasite
 
-my $bigstring;
+my $bigstring = "";
+my $begintitle;
 
-my @lines = <>;
+#my @lines = <>;
 
-if($#lines >= 2){
-	$IP = $lines[0];
-	$status = $lines[1];
-	if($status =~ /200 OK/){	# if access was permited and some page returned
-		foreach (@lines){
-			chomp;
-			$bigstring .= $_;	# put everything into a big scalar variable
-		}
-		if($bigstring =~ /<title>(.+)<\/title>/i){	# if there is a TITLE, extract it
-			if($1 =~ /<title>|<\/title>/i){		# if there are nested title tags inside, exclude this
-				$title = undef;
+my $i = 0;
+
+while(<>){
+	if($i == 0){
+		$IP = $_;
+	}elsif($i == 1){
+		$status = $_;
+	}elsif($status =~ /200 OK/){
+		if(/<title>/i && !defined($begintitle)){
+			$begintitle = 1;
+			if(/<\/title/i){
+				($title) = /<title>([^>]+)<\/title>/i;
+				$title =~ s/"/\\\"/g;	# put a backslash in front of "
+				$title =~ s/'/\\\'/g;	# ... and '
+				$title =~ s/^\s*//;	# discard heading spaces
+				$title =~ s/\s*$//;	# discard trailing spaces 
+				last;
 			}else{
-				$title = $1;
-				$title =~ s/"/\\\"/g;		# put a backslash in front of " and '
-				$title =~ s/'/\\\'/g;
+				chomp;
+				$bigstring .= $_;
+			}
+		}elsif(defined($begintitle)){
+			if(/<\/title>/i){
+				chomp;
+				$bigstring .= $_;
+				last;
+			}else{
+				chomp;
+				$bigstring .= $_;
 			}
 		}
-		if(defined($title)){
-			print "\tIP = $IP";
-			print "\tTitle = $title\n";
-			
-			# insert the obtained info into the database;
-			$dbh = DBI->connect($DSN, $user, $pass) or die "Conectare esuata: $DBI::errstr\n" unless $dbh;
-			
-			$sth = $dbh->prepare("START TRANSACTION");
-			$sth->execute();
-
-			$sth = $dbh->prepare("INSERT INTO pagini_html VALUES (NULL, '$IP', '$title');");
-			$sth->execute();
-			$sth = $dbh->prepare("SELECT \@idp:=LAST_INSERT_ID()");
-			$sth->execute();
-
-
-		}
 	}
+	$i++;
+}
+
+if(!defined($title)){
+	($title) = ($bigstring =~ /<title>(.+)<\/title>/i);
+	if(defined($title)){
+		$title =~ s/"/\\\"/g;
+		$title =~ s/'/\\\'/g;
+		$title =~ s/^\s*//;	
+		$title =~ s/\s*$//;
+	}
+}
+
+if(defined($title)){
+	print "\tIP = $IP";
+	print "\tTitle = $title\n";
+			
+	# insert the obtained info into the database;
+	$dbh = DBI->connect($DSN, $user, $pass) or die "Conectare esuata: $DBI::errstr\n" unless $dbh;
+			
+	$sth = $dbh->prepare("START TRANSACTION");
+	$sth->execute();
+
+	$sth = $dbh->prepare("INSERT INTO pagini_html VALUES (NULL, '$IP', '$title');");
+	$sth->execute();
+	$sth = $dbh->prepare("SELECT \@idp:=LAST_INSERT_ID()");
+	$sth->execute();
 }
 
 # extract any existing links
