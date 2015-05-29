@@ -17,7 +17,7 @@
 #define DEST_PORT 80
 
 // macro used on system calls errors; on final version suppress memset() call here and use it only once at beginning; adjust temp[] dimension as needed 
-#define ERROR(msg)	memset(temp, 0, 32); sprintf(temp, "[%s]:%d " msg "\n", __FILE__, __LINE__); write(STDOUT_FILENO, temp, strlen(temp)); perror(msg);
+#define ERROR(msg)	memset(temp, 0, 32); sprintf(temp, "[%s]:%d " msg "\n", __FILE__, __LINE__); write(STDERR_FILENO, temp, strlen(temp)); perror(msg);
 
 
 char IP[16];	// adresa IP de cautare server web; se va incrementa iterativ

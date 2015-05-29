@@ -33,10 +33,12 @@ while(<>){
 			$begintitle = 1;
 			if(/<\/title/i){
 				($title) = /<title>([^>]+)<\/title>/i;
-				$title =~ s/"/\\\"/g;	# put a backslash in front of "
-				$title =~ s/'/\\\'/g;	# ... and '
-				$title =~ s/^\s*//;	# discard heading spaces
-				$title =~ s/\s*$//;	# discard trailing spaces 
+				if(defined($title)){
+					$title =~ s/"/\\\"/g;	# put a backslash in front of "
+					$title =~ s/'/\\\'/g;	# ... and '
+					$title =~ s/^\s*//;	# discard heading spaces
+					$title =~ s/\s*$//;	# discard trailing spaces 
+				}
 				last;
 			}else{
 				chomp;
