@@ -56,7 +56,7 @@ void setIP(){
 	unsigned char a,b,c,d;
 	char sa[4], sb[4], sc[4], sd[4];
 
-	memset(IP, 0, 16);
+	memset(IP1, 0, 16);
 
 	bzero((void *)sa, 4);
 	bzero((void *)sb, 4);
@@ -85,13 +85,13 @@ void setIP(){
 	sprintf(sc, "%d", (int)c);
 	sprintf(sd, "%d", (int)d);
 
-	strcat(IP, sa);
-	strcat(IP, ".");
-	strcat(IP, sb);
-	strcat(IP, ".");
-	strcat(IP, sc);
-	strcat(IP, ".");
-	strcat(IP, sd);
+	strcat(IP1, sa);
+	strcat(IP1, ".");
+	strcat(IP1, sb);
+	strcat(IP1, ".");
+	strcat(IP1, sc);
+	strcat(IP1, ".");
+	strcat(IP1, sd);
 
 
 	//strcpy(IP,"188.164.254.142");
@@ -144,7 +144,7 @@ int getOpenedSocket(int *sfd, char *IP_ADDRESS)
 		struct timeval tv;
 
 		FD_ZERO(&wfds);
-		FD_SET(sockfd, &wfds);
+		FD_SET(*sfd, &wfds);
 
 		tv.tv_sec = 1;
 		tv.tv_usec = 0;
@@ -193,7 +193,7 @@ int exchangeMessage(int *sfd, int thread_no, char *IP_ADDRESS)
 	char buf_read[8192];
 	ssize_t read_count;
 
-	switch(thread_no)
+	switch(thread_no){
 	case 1:
 		// writting on the socket
 		if(write(*sfd, "GET / HTTP/1.0\nUser-Agent: poesis/1.1\n\n", 39) == -1){
@@ -204,14 +204,14 @@ int exchangeMessage(int *sfd, int thread_no, char *IP_ADDRESS)
 			return -1;	// ERROR
 		}
 		FD_ZERO(&rfds);
-		FD_SET(sockfd, &rfds);
+		FD_SET(*sfd, &rfds);
 		tv.tv_sec = 5;
 		tv.tv_usec = 0;
-		if(select(sockfd+1, &rfds, NULL, NULL, &tv) == -1){
+		if(select((*sfd)+1, &rfds, NULL, NULL, &tv) == -1){
 			ERROR("select");
 			exit(EXIT_FAILURE);	// v. pthread_exit
 		}
-		if(FD_ISSET(sockfd, &rfds)){
+		if(FD_ISSET(*sfd, &rfds)){
 			int ipIndexHtml_fd;
 			int k = 0;
 			//int savedErrno;
@@ -235,7 +235,7 @@ int exchangeMessage(int *sfd, int thread_no, char *IP_ADDRESS)
 			// clear de buffer for used reading from the socket
 			memset(buf_read, 0,8192);
 							
-			while((read_count = read(sockfd, buf_read, 8192)) != 0){
+			while((read_count = read(*sfd, buf_read, 8192)) != 0){
 				if(read_count == -1){
 					if(errno == EAGAIN){
 						k++;	// loop EAGAIN counter
@@ -280,8 +280,9 @@ int exchangeMessage(int *sfd, int thread_no, char *IP_ADDRESS)
 
 		break;
 	default:
-
 		break;
+	}
+
 
 	return 0;	// Normal return
 }
