@@ -20,7 +20,7 @@
 #define ERROR(msg)	memset(temp, 0, 64); sprintf(temp, "[%s]:%d " msg "\n" "%s\n", __FILE__, __LINE__, strerror(errno)); write(STDERR_FILENO, temp, strlen(temp));
 
 
-char IP1[16];	// adresa IP de cautare server web; se va incrementa iterativ
+char IP1[16];	// adresa IP de cautare server web pe threadul 1
 char temp[64];	// used for printing eror messages; adjust dimension as needed
 /*
 static volatile sig_atomic_t gotAlarm = 0;	// Set nonzero on receipt of SIGALRM
