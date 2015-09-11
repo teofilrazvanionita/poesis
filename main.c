@@ -273,7 +273,7 @@ int exchangeMessage(int *sfd, int thread_no, char *IP_ADDRESS)
 				ERROR("close");
 				exit(EXIT_FAILURE);		// v. pthread_exit or _exit
 			}
-			return 0;
+			return 0;	// Normal return
 		}
 
 		break;
@@ -285,7 +285,7 @@ int exchangeMessage(int *sfd, int thread_no, char *IP_ADDRESS)
 	}
 
 
-	return -1;	// Normal return
+	return -1;	// Error return
 }
 
 void *rutina_fir1(void *params)
