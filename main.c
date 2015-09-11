@@ -20,7 +20,7 @@
 #define ERROR(msg)	memset(temp, 0, 64); sprintf(temp, "[%s]:%d " msg "\n" "%s\n", __FILE__, __LINE__, strerror(errno)); write(STDERR_FILENO, temp, strlen(temp));
 
 
-char IP[16];	// adresa IP de cautare server web; se va incrementa iterativ
+char IP1[16];	// adresa IP de cautare server web; se va incrementa iterativ
 char temp[64];	// used for printing eror messages; adjust dimension as needed
 /*
 static volatile sig_atomic_t gotAlarm = 0;	// Set nonzero on receipt of SIGALRM
@@ -98,211 +98,224 @@ void setIP(){
 	//strcpy(IP,"192.168.1.1");	// used for testing
 }
 
-void *rutina_fir1(void *params)
+int getOpenedSocket(int *sfd, char *IP_ADDRESS)
 {
-	int sockfd, retcon, flags;
+	int flags, retcon;
 	struct sockaddr_in dest_addr;
-/*
-	struct sigaction sa;	// establish a handler fot SIGALRM
-										
-	sigemptyset(&sa.sa_mask);
-	sa.sa_flags = SA_RESTART;
-	sa.sa_handler = sigAlrmHandler;
-									
-	if(sigaction(SIGALRM, &sa, NULL) == -1){
-		ERROR("sigaction");
+
+	*sfd = socket(AF_INET, SOCK_STREAM, 0);
+	if(*sfd == -1){
+		ERROR("socket");
 		exit(EXIT_FAILURE);	// v. pthread_exit
 	}
-*/
-	while(1){
-		setIP();	
 
-		sockfd = socket(AF_INET, SOCK_STREAM, 0);
-		if(sockfd == -1){
-			ERROR("socket");
-			exit(EXIT_FAILURE);	// v. pthread_exit
-		}
-	
-		flags = fcntl(sockfd, F_GETFL);
-		if(flags == -1){
-			ERROR("fcntl");
-			exit(EXIT_FAILURE);	// v. pthread_exit
-		}
-		flags |= O_NONBLOCK;;
-		if(fcntl(sockfd, F_SETFL, flags) == -1){
-			ERROR("fcntl");
-			exit(EXIT_FAILURE);	// v. pthread_exit
-		}
+	flags = fcntl(*sfd, F_GETFL);
+	if(flags == -1){
+		ERROR("fcntl");
+		exit(EXIT_FAILURE);	// v. pthread_exit
+	}
+	flags |= O_NONBLOCK;;
+	if(fcntl(*sfd, F_SETFL, flags) == -1){
+		ERROR("fcntl");
+		exit(EXIT_FAILURE);	// v. pthread_exit
+	}
 
-		dest_addr.sin_family = AF_INET;
-		dest_addr.sin_port = htons(DEST_PORT);
-		dest_addr.sin_addr.s_addr = inet_addr(IP);
-		memset(&(dest_addr.sin_zero), 0, 8);
-	
-		retcon = connect(sockfd, (struct sockaddr *)&dest_addr, sizeof(struct sockaddr));
-		if (retcon == -1){
-			if(errno == ECONNREFUSED){
-				write(STDOUT_FILENO, "Connection refused\n", 19);
-				if(close(sockfd) == -1){
-					ERROR("close");
-					exit(EXIT_FAILURE);	// v. pthread_exit
-				}
-				continue;
+	dest_addr.sin_family = AF_INET;
+	dest_addr.sin_port = htons(DEST_PORT);
+	dest_addr.sin_addr.s_addr = inet_addr(IP_ADDRESS);
+	memset(&(dest_addr.sin_zero), 0, 8);
+
+	retcon = connect(*sfd, (struct sockaddr *)&dest_addr, sizeof(struct sockaddr));
+	if (retcon == -1){
+		if(errno == ECONNREFUSED){
+			write(STDOUT_FILENO, "Connection refused\n", 19);
+			if(close(*sfd) == -1){
+				ERROR("close");
+				exit(EXIT_FAILURE);	// v. pthread_exit
 			}
+			return -1;
 		}
-	
-		if(retcon == -1 && errno == EINPROGRESS){
-			char writebuf[29];
-			int sockoptval = 0;
-			socklen_t sockoptsize;
-			fd_set wfds, rfds;
-			ssize_t read_count;
-			struct timeval tv;
-			char buf_read[8192];
+	}
+	if(retcon == -1 && errno == EINPROGRESS){
+		char writebuf[29];
+		int sockoptval = 0;
+		socklen_t sockoptsize;
+		fd_set wfds;
+		struct timeval tv;
 
-			FD_ZERO(&wfds);
-			FD_SET(sockfd, &wfds);
+		FD_ZERO(&wfds);
+		FD_SET(sockfd, &wfds);
 
-			tv.tv_sec = 1;
-			tv.tv_usec = 0;
+		tv.tv_sec = 1;
+		tv.tv_usec = 0;
 
-			sockoptsize = sizeof(sockoptval);
-			
-			while(1){
-				if(select(sockfd + 1, NULL, &wfds,  NULL, &tv) == -1){
-					ERROR("select");
+		sockoptsize = sizeof(sockoptval);
+
+		while(1){
+			if(select(*sfd + 1, NULL, &wfds,  NULL, &tv) == -1){
+				ERROR("select");
+				exit(EXIT_FAILURE);	// v. pthread_exit
+			}
+			if(FD_ISSET(*sfd, &wfds)){
+				if(getsockopt(*sfd, SOL_SOCKET, SO_ERROR, &sockoptval, &sockoptsize) == -1){
+					ERROR("getsockopt");
 					exit(EXIT_FAILURE);	// v. pthread_exit
 				}
-				if(FD_ISSET(sockfd, &wfds)){
-					if(getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &sockoptval, &sockoptsize) == -1){
-						ERROR("getsockopt");
-						exit(EXIT_FAILURE);	// v. pthread_exit
+				if(!sockoptval){
+					memset(writebuf, 0, 29);
+					strcat(writebuf, "Connected to ");	// possible reentrancy issues!
+					strcat(writebuf, IP_ADDRESS);
+					strcat(writebuf, "\n");
+				
+					if(write(STDOUT_FILENO, writebuf, 14 + strlen(IP_ADDRESS)) == -1){
+						ERROR("write");
+						exit(EXIT_FAILURE);	// v. pthread_exit or _exit()
 					}
-					if(!sockoptval){
-						memset(writebuf, 0, 29);
-						strcat(writebuf, "Connected to ");	// possible reentrancy issues!
-						strcat(writebuf, IP);
-						strcat(writebuf, "\n");
-						if(write(STDOUT_FILENO, writebuf, 14 + strlen(IP)) == -1){
-							ERROR("write");
-							exit(EXIT_FAILURE);	// v. pthread_exit or _exit()
-						}
-						
-						// writting on the socket
-						if(write(sockfd, "GET / HTTP/1.0\nUser-Agent: poesis/1.0\n\n", 39) == -1){
-							if(write(STDOUT_FILENO, "Error writing on socket\n", 24) == -1){
-								ERROR("write");
-								exit(EXIT_FAILURE);		// v. pthread_exit
-							}
-							break;
-						}
-						
-						FD_ZERO(&rfds);
-						FD_SET(sockfd, &rfds);
-						tv.tv_sec = 5;
-						tv.tv_usec = 0;
-						if(select(sockfd+1, &rfds, NULL, NULL, &tv) == -1){
-							ERROR("select");
-							exit(EXIT_FAILURE);	// v. pthread_exit
-						}
-						if(FD_ISSET(sockfd, &rfds)){
-							int ipIndexHtml_fd;
-							int k = 0;
-							//int savedErrno;
-
-							// open and create file "ip-index-html"
-							if((ipIndexHtml_fd = open("ip-index-html", O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR)) == -1){
-								ERROR("open");
-								exit(EXIT_FAILURE);	// v. pthread_exit
-							}
-							
-							// write IP address on first line of the file
-							if(write(ipIndexHtml_fd, IP, strlen(IP)) == -1){
-								ERROR("write");
-								exit(EXIT_FAILURE);	// v. pthread_exit
-							}
-							if(write(ipIndexHtml_fd, "\n", 1) == -1){
-								ERROR("write");
-								exit(EXIT_FAILURE);	// v. pthred_exit or _exit
-							}
-							
-							// clear de buffer for used reading from the socket
-							memset(buf_read, 0,8192);
-							
-							while((read_count = read(sockfd, buf_read, 8192)) != 0){
-								if(read_count == -1){
-									if(errno == EAGAIN){
-										k++;	// loop EAGAIN counter
-										
-										/*
-										alarm(5);	// trimite SIGALRM dupa 20 sec pentru a asigura iesirea
-												//   din ciclu chiar si cand acesta devine infinit 
-											
-										if(gotAlarm){
-											gotAlarm = 0;
-											break;
-										}
-										*/
-
-										if(k >= 3){
-											break;
-										}
-										if(write(STDOUT_FILENO, "Resource temporary anavailable, continuing...\n", 46) == -1){
-											ERROR("write");
-											exit(EXIT_FAILURE);	// v. pthread_exit
-										}
-										sleep(2);
-										continue;	
-									}
-									if(errno == ECONNRESET){
-										continue;
-									}
-									ERROR("read");
-									exit(EXIT_FAILURE);	// v. pthread_exit
-								}
-								
-								// write into the file
-								if(write(ipIndexHtml_fd, buf_read, read_count) != read_count){
-									ERROR("write");
-									exit(EXIT_FAILURE);	// v. pthread_exit
-								}
-							}
-							
-
-							if(write(STDOUT_FILENO, "Written to ip-index-html\n", 25) == -1){
-								ERROR("write");
-								exit(EXIT_FAILURE);		// v. pthread_exit, _exit...
-							}	
-							if(close(ipIndexHtml_fd) == -1){
-								ERROR("close");
-								exit(EXIT_FAILURE);		// v. pthread_exit or _exit
-							}
-
-							if(system("./parseIPIndexHtml.pl") == -1){
-								ERROR("system");
-								exit(EXIT_FAILURE);		// v. pthread_exit
-							}
-							
-							if((shutdown(sockfd, SHUT_RDWR) == -1) && (errno != ECONNRESET) && (errno != ENOTCONN)){
-								ERROR("shutdown");
-								exit(EXIT_FAILURE);		// v. phread_exit
-							}
-							//sleep(20);
-						}
-						break;
-					}
-					break;
+					return 0;	// normal return
 				}
 				break;
 			}
+			break;
 		}
+	}
+	if(close(*sfd) == -1){
+		ERROR("close");
+		exit(EXIT_FAILURE);	// v. pthread_exit
+	}
 
-		if(close(sockfd) == -1){
-			ERROR("close");
+	return -1;
+}
+
+int exchangeMessage(int *sfd, int thread_no, char *IP_ADDRESS)
+{
+	fd_set rfds;
+	struct timeval tv;
+	char buf_read[8192];
+	ssize_t read_count;
+
+	switch(thread_no)
+	case 1:
+		// writting on the socket
+		if(write(*sfd, "GET / HTTP/1.0\nUser-Agent: poesis/1.1\n\n", 39) == -1){
+			if(write(STDERR_FILENO, "Error writing on socket\n", 24) == -1){
+				ERROR("write");
+				exit(EXIT_FAILURE);		// v. pthread_exit
+			}
+			return -1;	// ERROR
+		}
+		FD_ZERO(&rfds);
+		FD_SET(sockfd, &rfds);
+		tv.tv_sec = 5;
+		tv.tv_usec = 0;
+		if(select(sockfd+1, &rfds, NULL, NULL, &tv) == -1){
+			ERROR("select");
 			exit(EXIT_FAILURE);	// v. pthread_exit
 		}
+		if(FD_ISSET(sockfd, &rfds)){
+			int ipIndexHtml_fd;
+			int k = 0;
+			//int savedErrno;
 
+			// open and create file "ip-index-html"
+			if((ipIndexHtml_fd = open("ip-index-html", O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR)) == -1){
+				ERROR("open");
+				exit(EXIT_FAILURE);	// v. pthread_exit
+			}
+						
+			// write IP address on first line of the file
+			if(write(ipIndexHtml_fd, IP_ADDRESS, strlen(IP_ADDRESS)) == -1){
+				ERROR("write");
+				exit(EXIT_FAILURE);	// v. pthread_exit
+			}
+			if(write(ipIndexHtml_fd, "\n", 1) == -1){
+				ERROR("write");
+				exit(EXIT_FAILURE);	// v. pthred_exit or _exit
+			}
+							
+			// clear de buffer for used reading from the socket
+			memset(buf_read, 0,8192);
+							
+			while((read_count = read(sockfd, buf_read, 8192)) != 0){
+				if(read_count == -1){
+					if(errno == EAGAIN){
+						k++;	// loop EAGAIN counter
+									
+						if(k >= 3){
+							break;
+						}
+
+						if(write(STDOUT_FILENO, "Resource temporary anavailable, continuing...\n", 46) == -1){
+							ERROR("write");
+							exit(EXIT_FAILURE);	// v. pthread_exit
+						}
+						sleep(2);
+						continue;	
+					}
+					if(errno == ECONNRESET){
+						continue;
+					}
+					ERROR("read");
+					exit(EXIT_FAILURE);	// v. pthread_exit
+				}
+								
+				// write into the file
+				if(write(ipIndexHtml_fd, buf_read, read_count) != read_count){
+					ERROR("write");
+					exit(EXIT_FAILURE);	// v. pthread_exit
+				}
+			}
+							
+			if(write(STDOUT_FILENO, "Written to ip-index-html\n", 25) == -1){
+				ERROR("write");
+				exit(EXIT_FAILURE);		// v. pthread_exit, _exit...
+			}	
+			if(close(ipIndexHtml_fd) == -1){
+				ERROR("close");
+				exit(EXIT_FAILURE);		// v. pthread_exit or _exit
+			}
+		}
+
+		break;
+	case 2:
+
+		break;
+	default:
+
+		break;
+
+	return 0;	// Normal return
+}
+
+void *rutina_fir1(void *params)
+{
+	int sockfd;
+
+	while(1){
+		setIP();	
+
+		if(getOpenedSocket(&sockfd, IP1) == -1)
+			continue;
+		else{
+			if(!exchangeMessage(&sockfd, 1, IP1)){
+				if(system("./parseIPIndexHtml.pl") == -1){
+					ERROR("system");
+					exit(EXIT_FAILURE);		// v. pthread_exit
+				}
+			
+				if((shutdown(sockfd, SHUT_RDWR) == -1) && (errno != ECONNRESET) && (errno != ENOTCONN)){
+						ERROR("shutdown");
+						exit(EXIT_FAILURE);		// v. phread_exit
+				}
+			}
+			if((close(sockfd) == -1)){
+				ERROR("close");
+				exit(EXIT_FAILURE);		// v. phread_exit
+			}
+		}
+
+		
 	}
+
 	return NULL;
 }
 
