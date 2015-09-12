@@ -326,7 +326,7 @@ void *rutina_fir2(void *params)
 {
 	int sockfd;
        	
-	long long last_id = 1;
+	long long last_id = 1L;
 	char hiperlink[255];
 
 	char interogare[60];
@@ -351,7 +351,7 @@ void *rutina_fir2(void *params)
 	}
 
 	while(1){
-		sprintf(interogare,"select * from referinte_html where id > %ll", last_id);
+		sprintf(interogare, "select * from referinte_html where id > %lld", last_id);
 		
 		/* send SQL query */
 		if(mysql_query(conn, interogare)){
