@@ -1,8 +1,10 @@
 CC = gcc
 CFLAGS = -Wall -g
 LDLIBS = -pthread
-MYSQL_LIBS = -L/usr/lib -lmysqlclient -lpthread -lz -lm -lssl -lcrypto -ldl
-MYSQL_CFLAGS = -I/usr/include/mysql
+#MYSQL_LIBS = -L/usr/lib -lmysqlclient -lpthread -lz -lm -lssl -lcrypto -ldl
+MYSQL_LIBS = `mysql_config --libs`
+#MYSQL_CFLAGS = -I/usr/include/mysql
+MYSQL_CFLAGS = `mysql_config --cflags`
 
 all: poesis
 
