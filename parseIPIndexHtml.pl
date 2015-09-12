@@ -78,7 +78,7 @@ if(defined($title)){
 	$sth = $dbh->prepare("START TRANSACTION");
 	$sth->execute();
 
-	$sth = $dbh->prepare("INSERT INTO pagini_html VALUES (NULL, '$IP', '$title');");
+	$sth = $dbh->prepare("INSERT INTO pagini_html VALUES (NULL, '$IP', NULL, '$title', 1);");
 	$sth->execute();
 	$sth = $dbh->prepare("SELECT \@idp:=LAST_INSERT_ID()");
 	$sth->execute();
