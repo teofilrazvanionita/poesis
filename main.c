@@ -13,6 +13,7 @@
 #include <time.h>
 //#include <signal.h>
 #include <errno.h>
+#include <mysql.h>
 
 #define DEST_PORT 80
 
@@ -321,19 +322,98 @@ void *rutina_fir1(void *params)
 	return NULL;
 }
 
+void *rutina_fir2(void *params)
+{
+	int sockfd;
+       	
+	long long last_id = 1;
+	char hiperlink[255];
 
+	char interogare[60];
+
+	MYSQL *conn;
+	MYSQL_RES *res;
+	MYSQL_ROW row;
+
+	char *server = "localhost";
+	char *user = "razvan";
+	char *password = "password";
+	char *database = "poesis";
+
+	memset(hiperlink, 0 , 255);
+
+	conn = mysql_init(NULL);
+	/* Connect to database */
+	if (!mysql_real_connect(conn, server, user, password, database, 0, NULL, 0)){
+		ERROR("mysql_real_connect");
+		fprintf(stderr, "%s\n", mysql_error(conn));
+		exit(EXIT_FAILURE);
+	}
+
+	while(1){
+		sprintf(interogare,"select * from referinte_html where id > %ll", last_id);
+		
+		/* send SQL query */
+		if(mysql_query(conn, interogare)){
+			ERROR("mysql_query");
+			fprintf(stderr, "%s\n", mysql_error(conn));
+			exit(EXIT_FAILURE);
+		}
+
+		res = mysql_use_result(conn);
+		if(res == NULL){
+			ERROR("mysql_use_result");
+			fprintf(stderr, "%s\n", mysql_error(conn));
+			exit(EXIT_FAILURE);
+		}
+		
+		while((row = mysql_fetch_row(res))){
+			last_id = atoll(row[0]);
+			strncpy(hiperlink, row[2], 254);
+			
+			if(write(STDOUT_FILENO, hiperlink, strlen(hiperlink)) == -1){
+				ERROR("write");
+				exit(EXIT_FAILURE);
+			}
+
+			if(write(STDOUT_FILENO, "\n", 1) == -1){
+				ERROR("write");
+				exit(EXIT_FAILURE);
+			}
+
+			sleep(3);
+		}
+
+		sleep(3600);	// ii dam timp sa adauge in baza de date - 1h
+		
+		mysql_free_result(res);
+	}
+
+	return NULL;
+}
 
 int main(int argc, char *argv[])
 {
-	pthread_t fir1;
+	pthread_t fir1, fir2;
 	
 	if(pthread_create(&fir1,NULL, &rutina_fir1, NULL)){
+		ERROR("pthread_create");
+		exit(EXIT_FAILURE);
+	}
+	
+	if(pthread_create(&fir2, NULL, &rutina_fir2, NULL)){
 		ERROR("pthread_create");
 		exit(EXIT_FAILURE);
 	}
 
 	// asteptam incheierea
 	if(pthread_join(fir1, NULL)){
+		ERROR("pthread_join");
+		exit(EXIT_FAILURE);
+	}
+
+	// asteptam incheierea
+	if(pthread_join(fir2, NULL)){
 		ERROR("pthread_join");
 		exit(EXIT_FAILURE);
 	}
