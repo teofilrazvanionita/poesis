@@ -327,7 +327,7 @@ void *rutina_fir2(void *params)
 	int sockfd;
        	
 	long long last_id = 1L;
-	char hiperlink[255];
+	char hiperlink[500];
 
 	char interogare[60];
 
@@ -340,7 +340,7 @@ void *rutina_fir2(void *params)
 	char *password = "password";
 	char *database = "poesis";
 
-	memset(hiperlink, 0 , 255);
+	memset(hiperlink, 0 , 500);
 
 	conn = mysql_init(NULL);
 	/* Connect to database */
@@ -369,7 +369,7 @@ void *rutina_fir2(void *params)
 		
 		while((row = mysql_fetch_row(res))){
 			last_id = atoll(row[0]);
-			strncpy(hiperlink, row[2], 254);
+			strncpy(hiperlink, row[2], 499);
 			
 			if(write(STDOUT_FILENO, hiperlink, strlen(hiperlink)) == -1){
 				ERROR("write");
