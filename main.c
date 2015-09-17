@@ -95,8 +95,8 @@ void setIP(){
 	strcat(IP1, sd);
 
 
-	//strcpy(IP,"188.164.254.142");
-	//strcpy(IP,"192.168.1.1");	// used for testing
+	//strcpy(IP1, "153.120.37.225");
+	//strcpy(IP1, "192.168.1.1");	// used for testing
 }
 
 int getOpenedSocket(int *sfd, char *IP_ADDRESS)
@@ -138,7 +138,7 @@ int getOpenedSocket(int *sfd, char *IP_ADDRESS)
 		}
 	}
 	if(retcon == -1 && errno == EINPROGRESS){
-		char writebuf[29];
+		char writebuf[40];
 		int sockoptval = 0;
 		socklen_t sockoptsize;
 		fd_set wfds;
@@ -163,12 +163,12 @@ int getOpenedSocket(int *sfd, char *IP_ADDRESS)
 					exit(EXIT_FAILURE);	// v. pthread_exit
 				}
 				if(!sockoptval){
-					memset(writebuf, 0, 29);
-					strcat(writebuf, "Connected to ");	// possible reentrancy issues!
+					memset(writebuf, 0, 40);
+					strcat(writebuf, "THREAD 1: Connected to ");	// possible reentrancy issues!
 					strcat(writebuf, IP_ADDRESS);
 					strcat(writebuf, "\n");
 				
-					if(write(STDOUT_FILENO, writebuf, 14 + strlen(IP_ADDRESS)) == -1){
+					if(write(STDOUT_FILENO, writebuf, 24 + strlen(IP_ADDRESS)) == -1){
 						ERROR("write");
 						exit(EXIT_FAILURE);	// v. pthread_exit or _exit()
 					}
@@ -245,7 +245,7 @@ int exchangeMessage(int *sfd, int thread_no, char *IP_ADDRESS)
 							break;
 						}
 
-						if(write(STDOUT_FILENO, "Resource temporary anavailable, continuing...\n", 46) == -1){
+						if(write(STDOUT_FILENO, "THREAD 1: Resource temporary anavailable, continuing...\n", 56) == -1){
 							ERROR("write");
 							exit(EXIT_FAILURE);	// v. pthread_exit
 						}
@@ -266,7 +266,7 @@ int exchangeMessage(int *sfd, int thread_no, char *IP_ADDRESS)
 				}
 			}
 							
-			if(write(STDOUT_FILENO, "Written to ip-index-html\n", 25) == -1){
+			if(write(STDOUT_FILENO, "THREAD 1: Written to ip-index-html\n", 35) == -1){
 				ERROR("write");
 				exit(EXIT_FAILURE);		// v. pthread_exit, _exit...
 			}	
@@ -381,7 +381,7 @@ void *rutina_fir2(void *params)
 				exit(EXIT_FAILURE);
 			}
 
-			sleep(3);
+			sleep(1);
 		}
 
 		sleep(3600);	// ii dam timp sa adauge in baza de date - 1h

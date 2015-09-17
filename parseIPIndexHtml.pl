@@ -16,12 +16,19 @@ my ($IP, $title, $status);
 
 my @linkuri;	# tabloul cu linkurile gasite
 
+my @unique_links; # tabloul cu linkurile unice gasite
+
 my $bigstring = "";
 my $begintitle;
 
 #my @lines = <>;
 
 my $i = 0;
+
+sub uniq {
+	my %seen;
+	return grep { !$seen{$_} ++ } @_;
+}
 
 while(<>){
 	if($i == 0){
@@ -69,8 +76,8 @@ if(!defined($title)){
 }
 
 if(defined($title)){
-	print "\tIP = $IP";
-	print "\tTitle = $title\n";
+	print "THREAD 1: IP = $IP";
+	print "THREAD 1: Title = $title\n";
 			
 	# insert the obtained info into the database;
 	$dbh = DBI->connect($DSN, $user, $pass) or die "Conectare esuata: $DBI::errstr\n" unless $dbh;
@@ -88,17 +95,17 @@ if(defined($title)){
 if(defined($title)){
 	@ARGV = ("ip-index-html");
 	while(<>){
-		if(/href=(["']{1})\s*(http(s?):\/\/[^"'>]+\.(s?)html)\s*\1/i){
+		if(m%href=(["']{1})\s*(http(s?):\/\/[^"'>/]{1}[^"'>]+\.(s?)html)\s*\1%i){
 			if(/<\/a>/i){
 				my @items = split /(<\/a>)|(<\/A>)/;
 				foreach my $i (@items){
 					if(defined($i)){
-						if($i =~ /href=(["']{1})\s*(http(s?):\/\/[^"'>]+\.(s?)html)\s*\1/i){
+						if($i =~ m%href=(["']{1})\s*(http(s?):\/\/[^"'>/]{1}[^"'>]+\.(s?)html)\s*\1%i){
 							my $hiperlink = $2;
 							$hiperlink =~ s/"/\\\"/g;
 							$hiperlink =~ s/'/\\\'/g;
 							push @linkuri, $hiperlink;
-							print "\t$hiperlink\n";
+							# print "THREAD 1: $hiperlink\n";
 						}
 					}
 				}	
@@ -108,14 +115,18 @@ if(defined($title)){
 					$hiperlink =~ s/"/\\\"/g;
 					$hiperlink =~ s/'/\\\'/g;
 					push @linkuri, $hiperlink;
-					print "\t$hiperlink\n";
+					# print "THREAD 1: $hiperlink\n";
 				#}
 			}
 		}
 	}
-	foreach my $legatura (@linkuri){
+	
+	@unique_links = &uniq(@linkuri);
+
+	foreach my $legatura (@unique_links){
 		$sth = $dbh->prepare("INSERT INTO referinte_html VALUES (NULL, \@idp, '$legatura');");
 		$sth->execute();
+		print "THREAD 1: $legatura\n";
 	}
 	$sth = $dbh->prepare("COMMIT");
 	$sth->execute();
