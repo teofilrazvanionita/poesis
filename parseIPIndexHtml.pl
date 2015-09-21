@@ -95,12 +95,12 @@ if(defined($title)){
 if(defined($title)){
 	@ARGV = ("ip-index-html");
 	while(<>){
-		if(m%href=(["']{1})\s*(http(s?):\/\/[^"'>/]{1}[^"'>]+\.(s?)html)\s*\1%i){
+		if(m%href=(["']{1})\s*(http(s?):\/\/[^"'>/]{1}[^"'>]+\.((s?)html)|(php))\s*\1%i){
 			if(/<\/a>/i){
 				my @items = split /(<\/a>)|(<\/A>)/;
 				foreach my $i (@items){
 					if(defined($i)){
-						if($i =~ m%href=(["']{1})\s*(http(s?):\/\/[^"'>/]{1}[^"'>]+\.(s?)html)\s*\1%i){
+						if($i =~ m%href=(["']{1})\s*(http(s?):\/\/[^"'>/]{1}[^"'>]+\.((s?)html)|(php))\s*\1%i){
 							my $hiperlink = $2;
 							$hiperlink =~ s/"/\\\"/g;
 							$hiperlink =~ s/'/\\\'/g;
