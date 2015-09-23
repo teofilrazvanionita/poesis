@@ -3,6 +3,8 @@
 use strict;
 use DBI;
 
+use Fcntl qw(:seek); 
+
 my $DSN = "dbi:mysql:dbname=poesis";
 
 my $user = "razvan";
