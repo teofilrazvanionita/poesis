@@ -10,7 +10,6 @@ my $pass = "password";
 my $dbh;
 my $sth;
 
-@ARGV = ("ip-index-html");
 
 my ($IP, $title, $status);
 
@@ -30,7 +29,9 @@ sub uniq {
 	return grep { !$seen{$_} ++ } @_;
 }
 
-while(<>){
+open RESULT,  "<ip-index-html" or die "Connot create/open ip-index-html file: $!";
+
+while(<RESULT>){
 	if($i == 0){
 		$IP = $_;
 	}elsif($i == 1){
@@ -89,12 +90,12 @@ if(defined($title)){
 	$sth->execute();
 	$sth = $dbh->prepare("SELECT \@idp:=LAST_INSERT_ID()");
 	$sth->execute();
-}
 
-# extract any existing links
-if(defined($title)){
-	@ARGV = ("ip-index-html");
-	while(<>){
+	
+	seek(RESULT, 0, SEEK_SET);	# go back to the beginning of file
+
+	# extract any existing links
+	while(<RESULT>){
 		if(m%href=(["']{1})\s*(http(s?):\/\/[^"'>/]{1}[^"'>]+\.((s?)html)|(php))\s*\1%i){
 			if(/<\/a>/i){
 				my @items = split /(<\/a>)|(<\/A>)/;
@@ -134,3 +135,6 @@ if(defined($title)){
 	$dbh->disconnect;
 }
 
+close RESULT or die "Error closing filehandle: $!";
+
+exit 0;
