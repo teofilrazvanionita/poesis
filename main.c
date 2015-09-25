@@ -346,9 +346,10 @@ void *rutina_fir2(void *params)
 	/* Connect to database */
 	if (!mysql_real_connect(conn, server, user, password, database, 0, NULL, 0)){
 		//fprintf(stderr, "%s\n", mysql_error(conn));
-		if(write(STDERR_FILENO, mysql_error(conn), strlen(mysql_error(conn))) == -1){
+		if(write(STDERR_FILENO, mysql_error(conn), strlen(mysql_error(conn))) == -1)
 			ERROR("write");
-		}
+		if(write(STDERR_FILENO, "\n", 1) == -1)
+			ERROR("write");
 		exit(EXIT_FAILURE);
 	}
 
@@ -358,18 +359,20 @@ void *rutina_fir2(void *params)
 		/* send SQL query */
 		if(mysql_query(conn, interogare)){
 			//fprintf(stderr, "%s\n", mysql_error(conn));
-			if(write(STDERR_FILENO, mysql_error(conn), strlen(mysql_error(conn))) == -1){
+			if(write(STDERR_FILENO, mysql_error(conn), strlen(mysql_error(conn))) == -1)
 				ERROR("write");
-			}
+			if(write(STDERR_FILENO, "\n", 1) == -1)
+				ERROR("write");
 			exit(EXIT_FAILURE);
 		}
 
 		res = mysql_use_result(conn);
 		if(res == NULL){
 			//fprintf(stderr, "%s\n", mysql_error(conn));
-			if(write(STDERR_FILENO, mysql_error(conn), strlen(mysql_error(conn))) == -1){
+			if(write(STDERR_FILENO, mysql_error(conn), strlen(mysql_error(conn))) == -1)
 				ERROR("write");
-			}
+			if(write(STDERR_FILENO, "\n", 1) == -1)
+				ERROR("write");
 			exit(EXIT_FAILURE);
 		}
 		
