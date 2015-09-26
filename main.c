@@ -14,6 +14,7 @@
 //#include <signal.h>
 #include <errno.h>
 #include <mysql.h>
+#include <errmsg.h>
 
 #define DEST_PORT 80
 
@@ -326,7 +327,7 @@ void *rutina_fir2(void *params)
 {
 	int sockfd;
        	
-	long long last_id = 1L;
+	long long last_id = 0L;
 	char hiperlink[500];
 
 	char interogare[60];
@@ -374,6 +375,19 @@ void *rutina_fir2(void *params)
 				ERROR("write");
 			}
 			
+			if((mysql_errno(conn)) == CR_SERVER_GONE_ERROR){
+				//trying to re-establish the connection
+				if(!mysql_real_connect(conn, server, user, password, database, 0 , NULL, 0)){
+					if(write(STDERR_FILENO, mysql_error(conn), strlen(mysql_error(conn))) == -1){
+						ERROR("write");
+					}
+					if(write(STDERR_FILENO, "\nCouldn't re-establish connection\n", 34) == -1){
+						ERROR("write");
+						exit(EXIT_FAILURE);	
+					}
+				}
+				continue;
+			}
 			exit(EXIT_FAILURE);
 		}
 
