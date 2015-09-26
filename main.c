@@ -18,7 +18,7 @@
 #define DEST_PORT 80
 
 // macro used on system calls errors; on final version suppress memset() call here and use it only once at beginning; adjust temp[] dimension as needed 
-#define ERROR(msg)	memset(temp, 0, 64); sprintf(temp, "[%s]:%d " msg "\n" "%s\n", __FILE__, __LINE__, strerror(errno)); write(STDERR_FILENO, temp, strlen(temp));
+#define ERROR(msg)	memset(temp, 0, 64); sprintf(temp, "[%s]:%d " msg ":\n" "errnum %d: %s\n", __FILE__, __LINE__, errno, strerror(errno)); write(STDERR_FILENO, temp, strlen(temp));
 
 
 char IP1[16];	// adresa IP de cautare server web pe threadul 1
@@ -331,6 +331,8 @@ void *rutina_fir2(void *params)
 
 	char interogare[60];
 
+	char errorMySQLAPI[255];
+
 	MYSQL *conn;
 	MYSQL_RES *res;
 	MYSQL_ROW row;
@@ -341,15 +343,20 @@ void *rutina_fir2(void *params)
 	char *database = "poesis";
 
 	memset(hiperlink, 0 , 500);
+	memset(errorMySQLAPI, 0 ,255);
 
 	conn = mysql_init(NULL);
 	/* Connect to database */
 	if (!mysql_real_connect(conn, server, user, password, database, 0, NULL, 0)){
 		//fprintf(stderr, "%s\n", mysql_error(conn));
-		if(write(STDERR_FILENO, mysql_error(conn), strlen(mysql_error(conn))) == -1)
+		
+		strcpy(errorMySQLAPI, mysql_error(conn));
+		strcat(errorMySQLAPI, "\n");
+		
+		if(write(STDERR_FILENO, errorMySQLAPI, strlen(errorMySQLAPI)) == -1){
 			ERROR("write");
-		if(write(STDERR_FILENO, "\n", 1) == -1)
-			ERROR("write");
+		}
+
 		exit(EXIT_FAILURE);
 	}
 
@@ -359,20 +366,28 @@ void *rutina_fir2(void *params)
 		/* send SQL query */
 		if(mysql_query(conn, interogare)){
 			//fprintf(stderr, "%s\n", mysql_error(conn));
-			if(write(STDERR_FILENO, mysql_error(conn), strlen(mysql_error(conn))) == -1)
+
+			strcpy(errorMySQLAPI, mysql_error(conn));
+			strcat(errorMySQLAPI,"\n");
+
+			if(write(STDERR_FILENO, errorMySQLAPI, strlen(errorMySQLAPI)) == -1){
 				ERROR("write");
-			if(write(STDERR_FILENO, "\n", 1) == -1)
-				ERROR("write");
+			}
+			
 			exit(EXIT_FAILURE);
 		}
 
 		res = mysql_use_result(conn);
 		if(res == NULL){
 			//fprintf(stderr, "%s\n", mysql_error(conn));
-			if(write(STDERR_FILENO, mysql_error(conn), strlen(mysql_error(conn))) == -1)
+			
+			strcpy(errorMySQLAPI, mysql_error(conn));
+			strcat(errorMySQLAPI,"\n");
+			
+			if(write(STDERR_FILENO, errorMySQLAPI, strlen(errorMySQLAPI)) == -1){
 				ERROR("write");
-			if(write(STDERR_FILENO, "\n", 1) == -1)
-				ERROR("write");
+			}
+
 			exit(EXIT_FAILURE);
 		}
 		
@@ -380,6 +395,9 @@ void *rutina_fir2(void *params)
 			last_id = atoll(row[0]);
 			strncpy(hiperlink, row[2], 499);
 			
+			if(write(STDOUT_FILENO, row[0], strlen(row[0])) == -1){
+				ERROR("write");
+			}
 			if(write(STDOUT_FILENO, hiperlink, strlen(hiperlink)) == -1){
 				ERROR("write");
 				exit(EXIT_FAILURE);
