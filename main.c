@@ -328,7 +328,14 @@ void *rutina_fir2(void *params)
 	int sockfd;
        	
 	long long last_id = 0L;
-	char hiperlink[500];
+	
+	typedef struct {
+		long long ID;
+		long long ID_pagini_html;
+		char Link[500];
+	}TABLE_ROW;
+	
+	TABLE_ROW line;
 
 	char interogare[60];
 
@@ -343,8 +350,9 @@ void *rutina_fir2(void *params)
 	char *password = "password";
 	char *database = "poesis";
 
-	memset(hiperlink, 0 , 500);
+	//memset(hiperlink, 0 , 500);
 	memset(errorMySQLAPI, 0 ,255);
+	memset(&line, 0, sizeof(line));
 
 	conn = mysql_init(NULL);
 	/* Connect to database */
@@ -406,13 +414,17 @@ void *rutina_fir2(void *params)
 		}
 		
 		while((row = mysql_fetch_row(res))){
-			last_id = atoll(row[0]);
-			strncpy(hiperlink, row[2], 499);
+			line.ID = atoll(row[0]);
+			line.ID_pagini_html = atoll(row[1]);
+			strncpy(line.Link, row[2], 499);
+			
+			last_id = line.ID;
+			
 			
 			if(write(STDOUT_FILENO, row[0], strlen(row[0])) == -1){
 				ERROR("write");
 			}
-			if(write(STDOUT_FILENO, hiperlink, strlen(hiperlink)) == -1){
+			if(write(STDOUT_FILENO, line.Link, strlen(line.Link)) == -1){
 				ERROR("write");
 				exit(EXIT_FAILURE);
 			}
