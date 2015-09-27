@@ -21,6 +21,11 @@
 // macro used on system calls errors; on final version suppress memset() call here and use it only once at beginning; adjust temp[] dimension as needed 
 #define ERROR(msg)	memset(temp, 0, 64); sprintf(temp, "[%s]:%d " msg ":\n" "errnum %d: %s\n", __FILE__, __LINE__, errno, strerror(errno)); write(STDERR_FILENO, temp, strlen(temp));
 
+typedef struct {
+	long long ID;
+	long long ID_pagini_html;
+	char Link[500];
+}TABLE_ROW;
 
 char IP1[16];	// adresa IP de cautare server web pe threadul 1
 char temp[64];	// used for printing eror messages; adjust dimension as needed
@@ -328,13 +333,7 @@ void *rutina_fir2(void *params)
 	int sockfd;
        	
 	long long last_id = 0L;
-	
-	typedef struct {
-		long long ID;
-		long long ID_pagini_html;
-		char Link[500];
-	}TABLE_ROW;
-	
+		
 	TABLE_ROW line;
 
 	char interogare[60];
@@ -344,6 +343,8 @@ void *rutina_fir2(void *params)
 	MYSQL *conn;
 	MYSQL_RES *res;
 	MYSQL_ROW row;
+
+	my_bool reconnect = 1;	// enable auto-reconnect
 
 	char *server = "localhost";
 	char *user = "razvan";
@@ -355,6 +356,18 @@ void *rutina_fir2(void *params)
 	memset(&line, 0, sizeof(line));
 
 	conn = mysql_init(NULL);
+
+	/* enable auto reconnection */
+	if(mysql_options(conn, MYSQL_OPT_RECONNECT, &reconnect)){
+		if(write(STDERR_FILENO, mysql_error(conn), strlen(mysql_error(conn))) == -1){
+			ERROR("write");
+		}
+		if(write(STDERR_FILENO, "\n", 1) == -1){
+			ERROR("write");
+		}
+		exit(EXIT_FAILURE);
+	}
+
 	/* Connect to database */
 	if (!mysql_real_connect(conn, server, user, password, database, 0, NULL, 0)){
 		//fprintf(stderr, "%s\n", mysql_error(conn));
@@ -382,7 +395,7 @@ void *rutina_fir2(void *params)
 			if(write(STDERR_FILENO, errorMySQLAPI, strlen(errorMySQLAPI)) == -1){
 				ERROR("write");
 			}
-			
+			/*
 			if((mysql_errno(conn)) == CR_SERVER_GONE_ERROR){
 				//trying to re-establish the connection
 				if(!mysql_real_connect(conn, server, user, password, database, 0 , NULL, 0)){
@@ -395,7 +408,7 @@ void *rutina_fir2(void *params)
 					}
 				}
 				continue;
-			}
+			} */
 			exit(EXIT_FAILURE);
 		}
 
