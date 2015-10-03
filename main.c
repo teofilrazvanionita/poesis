@@ -20,12 +20,18 @@
 
 // macro used on system calls errors; on final version suppress memset() call here and use it only once at beginning; adjust temp[] dimension as needed 
 #define ERROR(msg)	memset(temp, 0, 64); sprintf(temp, "[%s]:%d " msg ":\n" "errnum %d: %s\n", __FILE__, __LINE__, errno, strerror(errno)); write(STDERR_FILENO, temp, strlen(temp));
+#define PTHREAD_ERROR(msg,err)	memset(temp, 0, 64); sprintf(temp, "[%s]:%d " msg ":\n" "errnum %d: %s\n", __FILE__, __LINE__, err, strerror(err)); write(STDERR_FILENO, temp, strlen(temp));
+
 
 typedef struct {
 	long long ID;
 	long long ID_pagini_html;
 	char Link[500];
 }TABLE_ROW;
+
+static pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
+
+TABLE_ROW current_line_ref_html;	// used sincron by threads 2 and 3
 
 char IP1[16];	// adresa IP de cautare server web pe threadul 1
 char temp[64];	// used for printing eror messages; adjust dimension as needed
@@ -295,6 +301,41 @@ int exchangeMessage(int *sfd, int thread_no, char *IP_ADDRESS)
 	return -1;	// Error return
 }
 
+
+void splitLink(const char *Link, char *WS, char *URI)
+{
+	char *p, *q;
+ 	int i;
+
+	p = strchr(Link, '/');
+	if(p)	// 1st '/' in html address
+		p++;
+	else{
+		ERROR("Not an web address format");
+		exit(EXIT_FAILURE);
+	}
+	
+	p = strchr(p, '/');
+	if(p)	// 2nd '/' in html address
+		p++;
+	else{
+		ERROR("Not an web address format");
+		exit(EXIT_FAILURE);
+	}
+
+	p = strchr(p, '/');
+	if(p){
+		for(q = (char *)Link, i = 0; q < p; q++, i++)
+			WS[i] = Link[i];
+		strcpy(URI, p);
+	}
+	else{
+		strcpy(WS, Link);
+		*URI = '\0';
+	}
+}
+
+
 void *rutina_fir1(void *params)
 {
 	int sockfd;
@@ -331,10 +372,14 @@ void *rutina_fir1(void *params)
 void *rutina_fir2(void *params)
 {
 	int sockfd;
-       	
+	int s;	// return value from pthread function calls
+		
 	long long last_id = 0L;
 		
 	TABLE_ROW line;
+	
+	char Server[255];	// web server address
+	char URI[500];		// URI request on web server (using HTTP/1.1)
 
 	char interogare[60];
 
@@ -351,9 +396,11 @@ void *rutina_fir2(void *params)
 	char *password = "password";
 	char *database = "poesis";
 
-	//memset(hiperlink, 0 , 500);
 	memset(errorMySQLAPI, 0 ,255);
 	memset(&line, 0, sizeof(line));
+	memset(Server, 0 , 255);
+	memset(URI, 0, 500);
+
 
 	conn = mysql_init(NULL);
 
@@ -433,10 +480,11 @@ void *rutina_fir2(void *params)
 			
 			last_id = line.ID;
 			
-			
+			write(STDOUT_FILENO, "THREAD 2 - Link No: ", 20);	
 			if(write(STDOUT_FILENO, row[0], strlen(row[0])) == -1){
 				ERROR("write");
 			}
+			write(STDOUT_FILENO, ": ", 2);
 			if(write(STDOUT_FILENO, line.Link, strlen(line.Link)) == -1){
 				ERROR("write");
 				exit(EXIT_FAILURE);
@@ -446,7 +494,31 @@ void *rutina_fir2(void *params)
 				ERROR("write");
 				exit(EXIT_FAILURE);
 			}
+			
+			memset(Server, 0 , 255);
+			memset(URI, 0, 500);
+		
+			splitLink(line.Link, Server, URI);
+			write(STDOUT_FILENO, "THREAD 2 - SERVER ADDRESS: ", 27);
+			write(STDOUT_FILENO, Server, strlen(Server));
+			write(STDOUT_FILENO, "\n", 1);
+			write(STDOUT_FILENO, "THREAD 2 - URI REQUEST: ", 24);
+			write(STDOUT_FILENO, URI, strlen(URI));
+			write(STDOUT_FILENO, "\n", 1);
 
+			s = pthread_mutex_lock(&mtx);
+			if(s != 0){
+				PTHREAD_ERROR("pthread_mutex_lock", s);
+				exit(EXIT_FAILURE);
+			}
+			
+			current_line_ref_html = line;
+
+			s = pthread_mutex_unlock(&mtx);
+			if(s != 0){
+				PTHREAD_ERROR("pthread_mutex_unlock", s);
+				exit(EXIT_FAILURE);
+			}
 			sleep(1);
 		}
 
