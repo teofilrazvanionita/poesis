@@ -5,8 +5,8 @@
 CREATE TABLE referinte_globale (
   ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   URL VARCHAR(500) NOT NULL,
-  Description Varchar(500),
+  Description VARCHAR(500),
   Data TEXT,
   RefreshDate TIMESTAMP,
-  PRIMARY KEY(ID),
+  PRIMARY KEY(ID)
 ) ENGINE=XtraDB;
