@@ -388,11 +388,13 @@ int verifyExistance(char *hiperlink)
         
 	while((row = mysql_fetch_row(res))){
             	mysql_free_result(res);
+		mysql_close(conn);
                 
                 return 1;
         }
         
         mysql_free_result(res);
+	mysql_close(conn);
         
         return 0;
 }
