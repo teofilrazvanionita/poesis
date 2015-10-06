@@ -5,7 +5,7 @@ use DBI;
 
 use Fcntl qw(:seek); 
 
-my $DSN = "dbi:mysql:dbname=poesis";
+my $DSN = "dbi:mysql:dbname=poesis:host=localhost";
 
 my $user = "razvan";
 my $pass = "password";

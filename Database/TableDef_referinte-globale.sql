@@ -8,5 +8,6 @@ CREATE TABLE referinte_globale (
   Description VARCHAR(500),
   Data TEXT,
   RefreshDate TIMESTAMP,
-  PRIMARY KEY(ID)
+  PRIMARY KEY(URL),
+  INDEX (ID)
 ) ENGINE=XtraDB;
