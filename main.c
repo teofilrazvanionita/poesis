@@ -335,6 +335,68 @@ void splitLink(const char *Link, char *WS, char *URI)
 	}
 }
 
+int verifyExistance(char *hiperlink)
+{
+        char interogare[560];
+    	
+        MYSQL *conn;
+	MYSQL_RES *res;
+	MYSQL_ROW row;
+        
+        char *server = "localhost";
+	char *user = "razvan";
+	char *password = "password";
+	char *database = "poesis";
+        
+        memset(interogare, 0, 560);
+        
+        conn = mysql_init(NULL);
+
+	/* Connect to database */
+	if (!mysql_real_connect(conn, server, user, password, database, 0, NULL, 0)){
+		if(write(STDERR_FILENO, mysql_error(conn), strlen(mysql_error(conn))) == -1){
+			ERROR("write");
+		}
+                if(write(STDERR_FILENO, "\n", 1) == -1){
+			ERROR("write");
+		}
+		exit(EXIT_FAILURE);
+	}
+        
+        sprintf(interogare, "select * from referinte_globale where URL = \"%s\"", hiperlink);
+        
+	if(mysql_query(conn, interogare)){
+		if(write(STDERR_FILENO, mysql_error(conn), strlen(mysql_error(conn))) == -1){
+			ERROR("write");
+		}
+                if(write(STDERR_FILENO, "\n", 1) == -1){
+			ERROR("write");
+		}		
+		exit(EXIT_FAILURE);
+	}
+
+	res = mysql_use_result(conn);
+	if(res == NULL){
+		if(write(STDERR_FILENO, mysql_error(conn), strlen(mysql_error(conn))) == -1){
+			ERROR("write");
+		}
+                if(write(STDERR_FILENO, "\n", 1) == -1){
+			ERROR("write");
+		}
+		exit(EXIT_FAILURE);
+	}
+        
+	while((row = mysql_fetch_row(res))){
+            	mysql_free_result(res);
+                
+                return 1;
+        }
+        
+        mysql_free_result(res);
+        
+        return 0;
+}
+
 
 void *rutina_fir1(void *params)
 {
@@ -506,6 +568,11 @@ void *rutina_fir2(void *params)
 			write(STDOUT_FILENO, URI, strlen(URI));
 			write(STDOUT_FILENO, "\n", 1);
 
+                        if(!verifyExistance(line.Link)){ // check if Link already exist in referinte_globale
+                                // Link doesn't exist - go further processing it here
+                                
+                        }
+                        
 			s = pthread_mutex_lock(&mtx);
 			if(s != 0){
 				PTHREAD_ERROR("pthread_mutex_lock", s);
