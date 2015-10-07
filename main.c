@@ -7,14 +7,16 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/socket.h>
+#include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <time.h>
-//#include <signal.h>
 #include <errno.h>
 #include <mysql.h>
 #include <errmsg.h>
+
+//#define _POSIX_SOURCE
 
 #define DEST_PORT 80
 
@@ -34,6 +36,7 @@ static pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
 TABLE_ROW current_line_ref_html;	// used sincron by threads 2 and 3
 
 char IP1[16];	// adresa IP de cautare server web pe threadul 1
+char IP2[16];	// IP address use by thread 2
 char temp[64];	// used for printing eror messages; adjust dimension as needed
 /*
 static volatile sig_atomic_t gotAlarm = 0;	// Set nonzero on receipt of SIGALRM
@@ -307,6 +310,7 @@ void splitLink(const char *Link, char *WS, char *URI)
 	char *p, *q;
  	int i;
 
+
 	p = strchr(Link, '/');
 	if(p)	// 1st '/' in html address
 		p++;
@@ -399,6 +403,57 @@ int verifyExistance(char *hiperlink)
         return 0;
 }
 
+void getIpAddressFromHostName(char *IP, const char *WS)
+{
+	const char *service = "80";
+	struct addrinfo hints; 
+	struct addrinfo *result, *rp;;
+	int s;
+	char *p;
+
+	memset(&hints, 0, sizeof(struct addrinfo));
+
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_protocol = 0;
+	hints.ai_flags = AI_NUMERICSERV;
+	hints.ai_canonname = NULL;
+	hints.ai_addr = NULL;
+	hints.ai_next = NULL;
+	
+
+	p = strchr(WS, '/');
+	if(p)	// 1st '/'
+		p++;
+	else{
+		ERROR("Not an web address format");
+		exit(EXIT_FAILURE);
+	}
+	
+	p = strchr(p, '/');
+	if(p)	// 2nd '/'
+		p++;
+	else{
+		ERROR("Not an web address format");
+		exit(EXIT_FAILURE);
+	}
+
+	if((s = getaddrinfo(p, service, &hints, &result)) != 0 && s != EAI_SYSTEM && s != EAI_NONAME){
+		printf("ERROR from getaddrinfo(): %s\n", gai_strerror(s));	// this part will be changes due to reentrancy issues
+		exit(EXIT_FAILURE);
+	}
+
+	for(rp = result; rp != NULL; rp = rp->ai_next){
+		strcpy(IP, inet_ntoa(((struct sockaddr_in *)rp->ai_addr)->sin_addr));	// laso this part might necesitate some mutex along time
+		if(IP)
+			break;
+	}
+
+	if(rp == NULL)
+		memset(IP, 0, 16);
+
+	freeaddrinfo(result);
+}
 
 void *rutina_fir1(void *params)
 {
@@ -572,7 +627,9 @@ void *rutina_fir2(void *params)
 
                         if(!verifyExistance(line.Link)){ // check if Link already exist in referinte_globale
                                 // Link doesn't exist - go further processing it here
-                                
+				memset(IP2, 0, 16);
+				getIpAddressFromHostName(IP2, Server);
+                                printf("Thread 2 - IP from Host Name: %s\n", IP2);
                         }
                         
 			s = pthread_mutex_lock(&mtx);
