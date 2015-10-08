@@ -205,12 +205,15 @@ int getOpenedSocket(int *sfd, char *IP_ADDRESS, int thread_no)
 	return -1;
 }
 
-int exchangeMessage(int *sfd, int thread_no, char *IP_ADDRESS)
+int exchangeMessage(int *sfd, int thread_no, char *IP_ADDRESS, const char *Server, const char *URI_REQ)
 {
 	fd_set rfds;
 	struct timeval tv;
 	char buf_read[8192];
 	ssize_t read_count;
+        
+        char http1_1req[800];
+        char *p;
 
 	switch(thread_no){
 	case 1:
@@ -297,12 +300,116 @@ int exchangeMessage(int *sfd, int thread_no, char *IP_ADDRESS)
 
 		break;
 	case 2:
+                memset(http1_1req, 0, 800);
+                //extract the host name part from server address containg the protocol specification (e.g. http, https))
+        	p = strchr(Server, '/');
+                if(p)	// 1st '/'
+                        p++;
+        	else{
+                	ERROR("Not an web address format");
+                        exit(EXIT_FAILURE);
+        	}
+        	p = strchr(p, '/');
+                if(p)	// 2nd '/'
+                        p++;
+        	else{
+                	ERROR("Not an web address format");
+                        exit(EXIT_FAILURE);
+        	}               
+                // construct the request string
+                strcpy(http1_1req, "GET ");
+                strcat(http1_1req, URI_REQ);
+                strcat(http1_1req, " HTTP/1.1\nUser-Agent: poesis/1.1\nHost: ");
+                strcat(http1_1req, p);
+                strcat(http1_1req, ":80\n\n");
+                
+                //send the request
+ 		if(write(*sfd, http1_1req, sizeof(http1_1req)) == -1){
+			if(write(STDERR_FILENO, "Error writing on socket\n", 24) == -1){
+				ERROR("write");
+				exit(EXIT_FAILURE);		// v. pthread_exit
+			}
+			return -1;	// ERROR
+		}
+                
+  		FD_ZERO(&rfds);
+		FD_SET(*sfd, &rfds);
+		tv.tv_sec = 5;
+		tv.tv_usec = 0;
+		if(select((*sfd)+1, &rfds, NULL, NULL, &tv) == -1){
+			ERROR("select");
+			exit(EXIT_FAILURE);	// v. pthread_exit
+		}             
+  		if(FD_ISSET(*sfd, &rfds)){
+			int refGlobPage_fd;
+			int k = 0;
+			//int savedErrno;
 
+			// open and create file "ip-index-html"
+			if((refGlobPage_fd = open("ref-glob-page", O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR)) == -1){
+				ERROR("open");
+				exit(EXIT_FAILURE);	// v. pthread_exit
+			}
+						
+			// write IP address on first line of the file
+			if(write(refGlobPage_fd, IP_ADDRESS, strlen(IP_ADDRESS)) == -1){
+				ERROR("write");
+				exit(EXIT_FAILURE);	// v. pthread_exit
+			}
+			if(write(refGlobPage_fd, "\n", 1) == -1){
+				ERROR("write");
+				exit(EXIT_FAILURE);	// v. pthred_exit or _exit
+			}
+							
+			// clear de buffer for used reading from the socket
+			memset(buf_read, 0,8192);
+							
+			while((read_count = read(*sfd, buf_read, 8192)) != 0){
+				if(read_count == -1){
+					if(errno == EAGAIN){
+						k++;	// loop EAGAIN counter
+									
+						if(k >= 3){
+							break;
+						}
+
+						if(write(STDOUT_FILENO, "THREAD 2: Resource temporary anavailable, continuing...\n", 56) == -1){
+							ERROR("write");
+							exit(EXIT_FAILURE);	// v. pthread_exit
+						}
+						sleep(2);
+						continue;	
+					}
+					if(errno == ECONNRESET){
+						continue;
+					}
+					ERROR("read");
+					exit(EXIT_FAILURE);	// v. pthread_exit
+				}
+								
+				// write into the file
+				if(write(refGlobPage_fd, buf_read, read_count) != read_count){
+					ERROR("write");
+					exit(EXIT_FAILURE);	// v. pthread_exit
+				}
+			}
+							
+			if(write(STDOUT_FILENO, "THREAD 2: Written to ref-glob-page\n", 35) == -1){
+				ERROR("write");
+				exit(EXIT_FAILURE);		// v. pthread_exit, _exit...
+			}	
+			if(close(refGlobPage_fd) == -1){
+				ERROR("close");
+				exit(EXIT_FAILURE);		// v. pthread_exit or _exit
+			}
+			return 0;	// Normal return
+		}
+              
+                
 		break;
 	default:
 		break;
 	}
-
 
 	return -1;	// Error return
 }
@@ -453,7 +560,7 @@ void getIpAddressFromHostName(char *IP, const char *WS)
 	}
 
 	if(rp == NULL)
-		memset(IP, 0, 16);
+		*IP = '\0';
 
 	freeaddrinfo(result);
 }
@@ -468,7 +575,7 @@ void *rutina_fir1(void *params)
 		if(getOpenedSocket(&sockfd, IP1, 1) == -1)
 			continue;
 		else{
-			if(!exchangeMessage(&sockfd, 1, IP1)){
+			if(!exchangeMessage(&sockfd, 1, IP1, NULL, NULL)){
 				if(system("./parseIPIndexHtml.pl") == -1){
 					ERROR("system");
 					exit(EXIT_FAILURE);		// v. pthread_exit
@@ -635,8 +742,12 @@ void *rutina_fir2(void *params)
                                 printf("Thread 2: IP from Host Name: %s\n", IP2);
 				if(*IP2){
 					if(!getOpenedSocket(&sockfd, IP2, 2)){
-						if(!exchangeMessage(&sockfd, 2, IP2)){
-
+						if(!exchangeMessage(&sockfd, 2, IP2, Server, URI)){
+                                                	
+                                                        if((shutdown(sockfd, SHUT_RDWR) == -1) && (errno != ECONNRESET) && (errno != ENOTCONN)){
+                                                                ERROR("shutdown");
+                                                                 exit(EXIT_FAILURE);		// v. phread_exit
+                                                        }
 						}
 						if(close(sockfd) == -1){
 							ERROR("close");
