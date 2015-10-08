@@ -114,7 +114,7 @@ void setIP(){
 	//strcpy(IP1, "192.168.1.1");	// used for testing
 }
 
-int getOpenedSocket(int *sfd, char *IP_ADDRESS)
+int getOpenedSocket(int *sfd, char *IP_ADDRESS, int thread_no)
 {
 	int flags, retcon;
 	struct sockaddr_in dest_addr;
@@ -179,7 +179,10 @@ int getOpenedSocket(int *sfd, char *IP_ADDRESS)
 				}
 				if(!sockoptval){
 					memset(writebuf, 0, 40);
-					strcat(writebuf, "THREAD 1: Connected to ");	// possible reentrancy issues!
+					if(thread_no == 1)
+						strcat(writebuf, "THREAD 1: Connected to ");	// possible reentrancy issues!
+					else if(thread_no == 2)
+						strcat(writebuf, "THREAD 2: Connected to ");
 					strcat(writebuf, IP_ADDRESS);
 					strcat(writebuf, "\n");
 				
@@ -462,7 +465,7 @@ void *rutina_fir1(void *params)
 	while(1){
 		setIP();	
 
-		if(getOpenedSocket(&sockfd, IP1) == -1)
+		if(getOpenedSocket(&sockfd, IP1, 1) == -1)
 			continue;
 		else{
 			if(!exchangeMessage(&sockfd, 1, IP1)){
@@ -599,7 +602,7 @@ void *rutina_fir2(void *params)
 			
 			last_id = line.ID;
 			
-			write(STDOUT_FILENO, "THREAD 2 - Link No: ", 20);	
+			write(STDOUT_FILENO, "THREAD 2: Link No: ", 19);	
 			if(write(STDOUT_FILENO, row[0], strlen(row[0])) == -1){
 				ERROR("write");
 			}
@@ -618,10 +621,10 @@ void *rutina_fir2(void *params)
 			memset(URI, 0, 500);
 		
 			splitLink(line.Link, Server, URI);
-			write(STDOUT_FILENO, "THREAD 2 - SERVER ADDRESS: ", 27);
+			write(STDOUT_FILENO, "THREAD 2: SERVER ADDRESS: ", 26);
 			write(STDOUT_FILENO, Server, strlen(Server));
 			write(STDOUT_FILENO, "\n", 1);
-			write(STDOUT_FILENO, "THREAD 2 - URI REQUEST: ", 24);
+			write(STDOUT_FILENO, "THREAD 2: URI REQUEST: ", 23);
 			write(STDOUT_FILENO, URI, strlen(URI));
 			write(STDOUT_FILENO, "\n", 1);
 
@@ -629,7 +632,18 @@ void *rutina_fir2(void *params)
                                 // Link doesn't exist - go further processing it here
 				memset(IP2, 0, 16);
 				getIpAddressFromHostName(IP2, Server);
-                                printf("Thread 2 - IP from Host Name: %s\n", IP2);
+                                printf("Thread 2: IP from Host Name: %s\n", IP2);
+				if(*IP2){
+					if(!getOpenedSocket(&sockfd, IP2, 2)){
+						if(!exchangeMessage(&sockfd, 2, IP2)){
+
+						}
+						if(close(sockfd) == -1){
+							ERROR("close");
+							exit(EXIT_FAILURE);
+						}
+					}
+				}
                         }
                         
 			s = pthread_mutex_lock(&mtx);
