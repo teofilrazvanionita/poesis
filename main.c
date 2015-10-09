@@ -762,7 +762,10 @@ void *rutina_fir2(void *params)
 				if(*IP2){
 					if(!getOpenedSocket(&sockfd, IP2, 2)){
 						if(!exchangeMessage(&sockfd, 2, IP2, Server, URI)){
-                                                	
+                        				if(system("./parseRefGlobv2.pl") == -1){
+                                        			ERROR("system");
+                                                                exit(EXIT_FAILURE);		// v. pthread_exit
+                                                        }
                                                         if((shutdown(sockfd, SHUT_RDWR) == -1) && (errno != ECONNRESET) && (errno != ENOTCONN)){
                                                                 ERROR("shutdown");
                                                                  exit(EXIT_FAILURE);		// v. phread_exit
