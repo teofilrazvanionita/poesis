@@ -29,8 +29,10 @@ my $meta_contents;
 my $h1 =    "";
 my $title = "";
 
-my $h1_flag    = 0;
-my $title_flag = 0;
+my $h1_flag     = 0;
+my $title_flag  = 0;
+my $script_flag = 0;
+my $style_flag	= 0;
 
 my $i = 0;
 my $html_start = 0;
@@ -46,10 +48,14 @@ sub start{
                 $h1_flag = 1;
         } elsif ($tag =~ /^title$/i && ! $title) {
                 $title_flag = 1;
-        } elsif ($tag =~ /^a$/i) {
+        } elsif ($tag =~ /^script$/i) {
+		$script_flag = 1;
+	} elsif ($tag =~ /^style$/) {
+		$style_flag = 1;
+	} elsif ($tag =~ /^a$/i) {
                 if (defined $attr->{'href'}) {
                         $href_value = $attr->{'href'};
-                        if($href_value =~ /http(s?):\/\/[^\/]{1}.*/i){
+                        if ($href_value =~ /http(s?):\/\/[^\/]{1}.*/i) {
                                 $linkuri{$href_value}++;
                         }
                 }
@@ -59,8 +65,11 @@ sub start{
 sub text{
         my ($self, $text) = @_;
         
-        if ($h1_flag)    { $h1    .= $text; return; }
-        if ($title_flag) { $title .= $text; return; }
+        if ($h1_flag)     { $h1    .= $text; return; }
+        if ($title_flag)  { $title .= $text; return; }
+	if ($script_flag) { return; }
+	if ($style_flag)  { return; }
+
         $datastring .= $text;
 	$datastring =~ s/\s+/ /g;
 }
@@ -70,6 +79,9 @@ sub end{
 
         if ($tag =~ /^h1$/i)    { $h1_flag = 0; }
         if ($tag =~ /^title$/i) { $title_flag = 0; }
+        if ($tag =~ /^script$/i) { $script_flag = 0; }
+        if ($tag =~ /^style$/i) { $style_flag = 0; }
+
 }
 
 open RESULT,  "<ref-glob-page" or die "Connot open ref-glob-page file: $!";
@@ -79,15 +91,15 @@ my $p = new ContentParser;
 while(<RESULT>){
 	if($i == 0){
 		$IP = $_;
-	}elsif($i == 1){
+	} elsif ($i == 1) {
 		$URL = $_;
-        }elsif($i == 2){
+        } elsif ($i == 2) {
                 $status = $_;
-	}elsif($status =~ /200 OK/ && !$html_start){
+	} elsif ($status =~ /200 OK/ && !$html_start) {
 		if(/^\s*$/){
 			$html_start = 1;
 		}
-	}elsif($status =~ /200 OK/ &&  $html_start){
+	} elsif ($status =~ /200 OK/ &&  $html_start) {
 		$p->parse($_);
 	}
 	$i++;
@@ -99,7 +111,7 @@ print "THREAD 2: Summary information: ", $meta_contents || $h1 || $title ||  "No
 foreach my $legatura (keys %linkuri){
 	print "THREAD 2: $legatura\n";
 }
-#print "Data: $datastring\n";
+print "Data: $datastring\n";
 
 close RESULT or die "Error closing filehandle: $!";
 
