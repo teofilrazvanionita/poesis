@@ -239,7 +239,7 @@ int exchangeMessage(int *sfd, int thread_no, char *IP_ADDRESS, const char *Serve
 			//int savedErrno;
 
 			// open and create file "ip-index-html"
-			if((ipIndexHtml_fd = open("ip-index-html", O_WRONLY | O_CREAT | O_TRUNC | O_DSYNC, S_IRUSR | S_IWUSR)) == -1){
+			if((ipIndexHtml_fd = open("ip-index-html", O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR)) == -1){
 				ERROR("open");
 				exit(EXIT_FAILURE);	// v. pthread_exit
 			}
@@ -346,7 +346,7 @@ int exchangeMessage(int *sfd, int thread_no, char *IP_ADDRESS, const char *Serve
 			//int savedErrno;
 
 			// open and create file "ip-index-html"
-			if((refGlobPage_fd = open("ref-glob-page", O_WRONLY | O_CREAT | O_TRUNC | O_DSYNC, S_IRUSR | S_IWUSR)) == -1){
+			if((refGlobPage_fd = open("ref-glob-page", O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR)) == -1){
 				ERROR("open");
 				exit(EXIT_FAILURE);	// v. pthread_exit
 			}
@@ -393,10 +393,10 @@ int exchangeMessage(int *sfd, int thread_no, char *IP_ADDRESS, const char *Serve
 					exit(EXIT_FAILURE);	// v. pthread_exit
 				}
 				//this should be redundant under normal conditions (e.g. a recent kernel version) as I've already specified the O_DSYNC flag at open()
-				if(fdatasync(refGlobPage_fd) == -1){
+				/*if(fdatasync(refGlobPage_fd) == -1){
 					ERROR("fdatasync");
 					exit(EXIT_FAILURE);
-				}
+				}*/
 			}
 							
 			if(write(STDOUT_FILENO, "THREAD 2: Written to ref-glob-page\n", 35) == -1){
