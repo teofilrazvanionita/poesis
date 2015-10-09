@@ -360,7 +360,21 @@ int exchangeMessage(int *sfd, int thread_no, char *IP_ADDRESS, const char *Serve
 				ERROR("write");
 				exit(EXIT_FAILURE);	// v. pthred_exit or _exit
 			}
-							
+
+			// write URLLink on second line
+			if(write(refGlobPage_fd, Server, strlen(Server)) == -1){
+				ERROR("write");
+				exit(EXIT_FAILURE);
+			}
+			if(write(refGlobPage_fd, URI_REQ, strlen(URI_REQ)) == -1){
+				ERROR("write");
+				exit(EXIT_FAILURE);
+			}
+			if(write(refGlobPage_fd, "\n", 1) == -1){
+				ERROR("write");
+				exit(EXIT_FAILURE);
+			}
+
 			// clear de buffer for used reading from the socket
 			memset(buf_read, 0,8192);
 							
