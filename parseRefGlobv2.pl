@@ -20,7 +20,7 @@ use base "HTML::Parser";
 
 my ($IP, $URL, $status);
 
-my %linkuri;	# Linkurile extrase in chei
+my %linkuri;	# Linkurile extrase - in chei
 
 my $datastring;
 my $description;
@@ -33,6 +33,7 @@ my $h1_flag    = 0;
 my $title_flag = 0;
 
 my $i = 0;
+my $html_start = 0;
 
 sub start{
         my ($self, $tag, $attr, $attrseq, $origtext) = @_;
@@ -61,7 +62,7 @@ sub text{
         if ($h1_flag)    { $h1    .= $text; return; }
         if ($title_flag) { $title .= $text; return; }
         $datastring .= $text;
-        $datastring =~ s/\s+/ /g;
+	$datastring =~ s/\s+/ /g;
 }
 
 sub end{
@@ -82,8 +83,12 @@ while(<RESULT>){
 		$URL = $_;
         }elsif($i == 2){
                 $status = $_;
-        }elsif($status =~ /200 OK/){
-                $p->parse($_);
+	}elsif($status =~ /200 OK/ && !$html_start){
+		if(/^\s*$/){
+			$html_start = 1;
+		}
+	}elsif($status =~ /200 OK/ &&  $html_start){
+		$p->parse($_);
 	}
 	$i++;
 }
@@ -94,6 +99,7 @@ print "THREAD 2: Summary information: ", $meta_contents || $h1 || $title ||  "No
 foreach my $legatura (keys %linkuri){
 	print "THREAD 2: $legatura\n";
 }
+#print "Data: $datastring\n";
 
 close RESULT or die "Error closing filehandle: $!";
 
