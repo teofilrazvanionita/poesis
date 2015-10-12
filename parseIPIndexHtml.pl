@@ -22,9 +22,6 @@ my @unique_links; # tabloul cu linkurile unice gasite
 my $bigstring = "";
 my $begintitle;
 
-#my @lines = <>;
-
-my $i = 0;
 
 sub uniq {
 	my %seen;
@@ -34,9 +31,9 @@ sub uniq {
 open RESULT,  "<ip-index-html" or die "Connot open ip-index-html file: $!";
 
 while(<RESULT>){
-	if($i == 0){
+	if($. == 1){
 		$IP = $_;
-	}elsif($i == 1){
+	}elsif($. == 2){
 		$status = $_;
 	}elsif($status =~ /200 OK/){
 		if(/<title>/i && !defined($begintitle)){
@@ -65,7 +62,6 @@ while(<RESULT>){
 			}
 		}
 	}
-	$i++;
 }
 
 if(!defined($title)){
