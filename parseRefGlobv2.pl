@@ -17,7 +17,6 @@ use base "HTML::Parser";
 #my $dbh;
 #my $sth;
 
-
 my ($IP, $URL, $status);
 
 my %linkuri;	# Linkurile extrase - in chei
@@ -34,7 +33,6 @@ my $title_flag  = 0;
 my $script_flag = 0;
 my $style_flag	= 0;
 
-my $i = 0;
 my $html_start = 0;
 
 sub start{
@@ -89,11 +87,11 @@ open RESULT,  "<ref-glob-page" or die "Connot open ref-glob-page file: $!";
 my $p = new ContentParser;
 
 while(<RESULT>){
-	if($i == 0){
+	if($. == 1){
 		$IP = $_;
-	} elsif ($i == 1) {
+	} elsif ($. == 2) {
 		$URL = $_;
-        } elsif ($i == 2) {
+        } elsif ($. == 3) {
                 $status = $_;
 	} elsif ($status =~ /200 OK/ && !$html_start) {
 		if(/\A\s*\Z/){
@@ -102,7 +100,6 @@ while(<RESULT>){
 	} elsif ($status =~ /200 OK/ &&  $html_start) {
 		$p->parse($_);
 	}
-	$i++;
 }
 
 $p->eof;
