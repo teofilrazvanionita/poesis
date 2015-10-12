@@ -42,17 +42,17 @@ sub start{
         
         my $href_value;
 
-        if ($tag =~ /^meta$/i && $attr->{'name'} =~ /^description$/i) {
+        if ($tag =~ /\Ameta\z/i && $attr->{'name'} =~ /\Adescription\z/i) {
                 $meta_contents = $attr->{'content'};
-        } elsif ($tag =~ /^h1$/i && ! $h1) {
+        } elsif ($tag =~ /\Ah1\z/i && ! $h1) {
                 $h1_flag = 1;
-        } elsif ($tag =~ /^title$/i && ! $title) {
+        } elsif ($tag =~ /\Atitle\z/i && ! $title) {
                 $title_flag = 1;
-        } elsif ($tag =~ /^script$/i) {
+        } elsif ($tag =~ /\Ascript\z/i) {
 		$script_flag = 1;
-	} elsif ($tag =~ /^style$/) {
+	} elsif ($tag =~ /\Astyle\z/) {
 		$style_flag = 1;
-	} elsif ($tag =~ /^a$/i) {
+	} elsif ($tag =~ /\Aa\z/i) {
                 if (defined $attr->{'href'}) {
                         $href_value = $attr->{'href'};
                         if ($href_value =~ /http(s?):\/\/[^\/]{1}.*/i) {
@@ -77,10 +77,10 @@ sub text{
 sub end{
         my ($self, $tag, $origtext) = @_;
 
-        if ($tag =~ /^h1$/i)    { $h1_flag = 0; }
-        if ($tag =~ /^title$/i) { $title_flag = 0; }
-        if ($tag =~ /^script$/i) { $script_flag = 0; }
-        if ($tag =~ /^style$/i) { $style_flag = 0; }
+        if ($tag =~ /\Ah1\z/i)     { $h1_flag     = 0; }
+        if ($tag =~ /\Atitle\z/i)  { $title_flag  = 0; }
+        if ($tag =~ /\Ascript\z/i) { $script_flag = 0; }
+        if ($tag =~ /\Astyle\z/i)  { $style_flag  = 0; }
 
 }
 
@@ -96,7 +96,7 @@ while(<RESULT>){
         } elsif ($i == 2) {
                 $status = $_;
 	} elsif ($status =~ /200 OK/ && !$html_start) {
-		if(/^\s*$/){
+		if(/\A\s*\Z/){
 			$html_start = 1;
 		}
 	} elsif ($status =~ /200 OK/ &&  $html_start) {
