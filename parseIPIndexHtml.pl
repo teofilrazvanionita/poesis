@@ -46,8 +46,8 @@ while(<RESULT>){
 				if(defined($title)){
 					$title =~ s/"/\\\"/g;	# put a backslash in front of "
 					$title =~ s/'/\\\'/g;	# ... and '
-					$title =~ s/^\s*//;	# discard heading spaces
-					$title =~ s/\s*$//;	# discard trailing spaces 
+					$title =~ s/\A\s*//;	# discard heading spaces
+					$title =~ s/\s*\z//;	# discard trailing spaces 
 				}
 				last;
 			}else{
@@ -73,8 +73,8 @@ if(!defined($title)){
 	if(defined($title)){
 		$title =~ s/"/\\\"/g;
 		$title =~ s/'/\\\'/g;
-		$title =~ s/^\s*//;	
-		$title =~ s/\s*$//;
+		$title =~ s/\A\s*//;	
+		$title =~ s/\s*\z//;
 	}
 }
 
