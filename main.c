@@ -568,7 +568,15 @@ void getIpAddressFromHostName(char *IP, const char *WS)
 	}
 
 	if((s = getaddrinfo(p, service, &hints, &result)) != 0 && s != EAI_SYSTEM && s != EAI_NONAME){
-		printf("ERROR from getaddrinfo(): %s\n", gai_strerror(s));	// this part will be changes due to reentrancy issues
+		if(write(STDERR_FILENO, "ERROR from getaddrinfo(): ", 26) == -1){
+			ERROR("write");
+			exit(EXIT_FAILURE);
+		}
+		if(write(STDERR_FILENO, gai_strerror(s), strlen(gai_strerror(s))) == -1){
+			ERROR("write");
+			exit(EXIT_FAILURE);
+		}
+		
 		exit(EXIT_FAILURE);
 	}
 
@@ -758,7 +766,20 @@ void *rutina_fir2(void *params)
                                 // Link doesn't exist - go further processing it here
 				memset(IP2, 0, 16);
 				getIpAddressFromHostName(IP2, Server);
-                                printf("Thread 2: IP from Host Name: %s\n", IP2);
+                                
+				if(write(STDOUT_FILENO, "Thread 2: IP from Host Name: ", 29) == -1){
+					ERROR("write");
+					exit(EXIT_FAILURE);
+				}
+				if(write(STDOUT_FILENO, IP2, strlen(IP2)) == -1){
+					ERROR("write");
+					exit(EXIT_FAILURE);
+				}
+				if(write(STDOUT_FILENO, "\n", 1) == -1){
+					ERROR("write");
+					exit(EXIT_FAILURE);
+				}
+
 				if(*IP2){
 					if(!getOpenedSocket(&sockfd, IP2, 2)){
 						if(!exchangeMessage(&sockfd, 2, IP2, Server, URI)){
