@@ -96,7 +96,7 @@ void setIP(){
 		d = fillRand();
 	}
 	
-	sprintf(sa, "%d", (int)a);	// possible reentrancy issues
+	sprintf(sa, "%d", (int)a);
 	sprintf(sb, "%d", (int)b);
 	sprintf(sc, "%d", (int)c);
 	sprintf(sd, "%d", (int)d);
@@ -180,7 +180,7 @@ int getOpenedSocket(int *sfd, char *IP_ADDRESS, int thread_no)
 				if(!sockoptval){
 					memset(writebuf, 0, 40);
 					if(thread_no == 1)
-						strcat(writebuf, "THREAD 1: Connected to ");	// possible reentrancy issues!
+						strcat(writebuf, "THREAD 1: Connected to ");
 					else if(thread_no == 2)
 						strcat(writebuf, "THREAD 2: Connected to ");
 					strcat(writebuf, IP_ADDRESS);
