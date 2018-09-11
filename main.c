@@ -53,16 +53,16 @@ unsigned char fillRand(){
 	fd_devurand = open("/dev/urandom", O_RDONLY);
 	if(fd_devurand == -1){
 		ERROR("open");
-		exit(EXIT_FAILURE);	// v. pthread_exit
+		exit(EXIT_FAILURE);
 	}	
 	readcount = read(fd_devurand, &read_buf, 1);
 	if(readcount != 1){
 		ERROR("read");
-		exit(EXIT_FAILURE);	// v. pthread_exit
+		exit(EXIT_FAILURE);
 	}
 	if(close(fd_devurand) == -1){
 		ERROR("close");
-		exit(EXIT_FAILURE);	// v. pthread_exit
+		exit(EXIT_FAILURE);
 	}
 
 	return (unsigned char) read_buf;
@@ -122,18 +122,18 @@ int getOpenedSocket(int *sfd, char *IP_ADDRESS, int thread_no)
 	*sfd = socket(AF_INET, SOCK_STREAM, 0);
 	if(*sfd == -1){
 		ERROR("socket");
-		exit(EXIT_FAILURE);	// v. pthread_exit
+		exit(EXIT_FAILURE);
 	}
 
 	flags = fcntl(*sfd, F_GETFL);
 	if(flags == -1){
 		ERROR("fcntl");
-		exit(EXIT_FAILURE);	// v. pthread_exit
+		exit(EXIT_FAILURE);
 	}
 	flags |= O_NONBLOCK;;
 	if(fcntl(*sfd, F_SETFL, flags) == -1){
 		ERROR("fcntl");
-		exit(EXIT_FAILURE);	// v. pthread_exit
+		exit(EXIT_FAILURE);
 	}
 
 	dest_addr.sin_family = AF_INET;
@@ -147,7 +147,7 @@ int getOpenedSocket(int *sfd, char *IP_ADDRESS, int thread_no)
 			write(STDOUT_FILENO, "Connection refused\n", 19);
 			if(close(*sfd) == -1){
 				ERROR("close");
-				exit(EXIT_FAILURE);	// v. pthread_exit
+				exit(EXIT_FAILURE);
 			}
 			return -1;
 		}
@@ -170,12 +170,12 @@ int getOpenedSocket(int *sfd, char *IP_ADDRESS, int thread_no)
 		while(1){
 			if(select(*sfd + 1, NULL, &wfds,  NULL, &tv) == -1){
 				ERROR("select");
-				exit(EXIT_FAILURE);	// v. pthread_exit
+				exit(EXIT_FAILURE);
 			}
 			if(FD_ISSET(*sfd, &wfds)){
 				if(getsockopt(*sfd, SOL_SOCKET, SO_ERROR, &sockoptval, &sockoptsize) == -1){
 					ERROR("getsockopt");
-					exit(EXIT_FAILURE);	// v. pthread_exit
+					exit(EXIT_FAILURE);
 				}
 				if(!sockoptval){
 					memset(writebuf, 0, 40);
@@ -188,7 +188,7 @@ int getOpenedSocket(int *sfd, char *IP_ADDRESS, int thread_no)
 				
 					if(write(STDOUT_FILENO, writebuf, 24 + strlen(IP_ADDRESS)) == -1){
 						ERROR("write");
-						exit(EXIT_FAILURE);	// v. pthread_exit or _exit()
+						exit(EXIT_FAILURE);
 					}
 					return 0;	// normal return
 				}
@@ -199,7 +199,7 @@ int getOpenedSocket(int *sfd, char *IP_ADDRESS, int thread_no)
 	}
 	if(close(*sfd) == -1){
 		ERROR("close");
-		exit(EXIT_FAILURE);	// v. pthread_exit
+		exit(EXIT_FAILURE);
 	}
 
 	return -1;
@@ -221,7 +221,7 @@ int exchangeMessage(int *sfd, int thread_no, char *IP_ADDRESS, const char *Serve
 		if(write(*sfd, "GET / HTTP/1.0\nUser-Agent: poesis/1.1\n\n", 39) == -1){
 			if(write(STDERR_FILENO, "Error writing on socket\n", 24) == -1){
 				ERROR("write");
-				exit(EXIT_FAILURE);		// v. pthread_exit
+				exit(EXIT_FAILURE);
 			}
 			return -1;	// ERROR
 		}
@@ -231,7 +231,7 @@ int exchangeMessage(int *sfd, int thread_no, char *IP_ADDRESS, const char *Serve
 		tv.tv_usec = 0;
 		if(select((*sfd)+1, &rfds, NULL, NULL, &tv) == -1){
 			ERROR("select");
-			exit(EXIT_FAILURE);	// v. pthread_exit
+			exit(EXIT_FAILURE);
 		}
 		if(FD_ISSET(*sfd, &rfds)){
 			int ipIndexHtml_fd;
@@ -241,17 +241,17 @@ int exchangeMessage(int *sfd, int thread_no, char *IP_ADDRESS, const char *Serve
 			// open and create file "ip-index-html"
 			if((ipIndexHtml_fd = open("ip-index-html", O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR)) == -1){
 				ERROR("open");
-				exit(EXIT_FAILURE);	// v. pthread_exit
+				exit(EXIT_FAILURE);
 			}
 						
 			// write IP address on first line of the file
 			if(write(ipIndexHtml_fd, IP_ADDRESS, strlen(IP_ADDRESS)) == -1){
 				ERROR("write");
-				exit(EXIT_FAILURE);	// v. pthread_exit
+				exit(EXIT_FAILURE);
 			}
 			if(write(ipIndexHtml_fd, "\n", 1) == -1){
 				ERROR("write");
-				exit(EXIT_FAILURE);	// v. pthred_exit or _exit
+				exit(EXIT_FAILURE);
 			}
 							
 			// clear de buffer for used reading from the socket
@@ -268,7 +268,7 @@ int exchangeMessage(int *sfd, int thread_no, char *IP_ADDRESS, const char *Serve
 
 						if(write(STDOUT_FILENO, "THREAD 1: Resource temporary anavailable, continuing...\n", 56) == -1){
 							ERROR("write");
-							exit(EXIT_FAILURE);	// v. pthread_exit
+							exit(EXIT_FAILURE);
 						}
 						sleep(2);
 						continue;	
@@ -277,23 +277,23 @@ int exchangeMessage(int *sfd, int thread_no, char *IP_ADDRESS, const char *Serve
 						continue;
 					}
 					ERROR("read");
-					exit(EXIT_FAILURE);	// v. pthread_exit
+					exit(EXIT_FAILURE);
 				}
 								
 				// write into the file
 				if(write(ipIndexHtml_fd, buf_read, read_count) != read_count){
 					ERROR("write");
-					exit(EXIT_FAILURE);	// v. pthread_exit
+					exit(EXIT_FAILURE);
 				}
 			}
 							
 			if(write(STDOUT_FILENO, "THREAD 1: Written to ip-index-html\n", 35) == -1){
 				ERROR("write");
-				exit(EXIT_FAILURE);		// v. pthread_exit, _exit...
+				exit(EXIT_FAILURE);
 			}	
 			if(close(ipIndexHtml_fd) == -1){
 				ERROR("close");
-				exit(EXIT_FAILURE);		// v. pthread_exit or _exit
+				exit(EXIT_FAILURE);
 			}
 			return 0;	// Normal return
 		}
@@ -327,7 +327,7 @@ int exchangeMessage(int *sfd, int thread_no, char *IP_ADDRESS, const char *Serve
  		if(write(*sfd, http1_1req, sizeof(http1_1req)) == -1){
 			if(write(STDERR_FILENO, "Error writing on socket\n", 24) == -1){
 				ERROR("write");
-				exit(EXIT_FAILURE);		// v. pthread_exit
+				exit(EXIT_FAILURE);
 			}
 			return -1;	// ERROR
 		}
@@ -338,7 +338,7 @@ int exchangeMessage(int *sfd, int thread_no, char *IP_ADDRESS, const char *Serve
 		tv.tv_usec = 0;
 		if(select((*sfd)+1, &rfds, NULL, NULL, &tv) == -1){
 			ERROR("select");
-			exit(EXIT_FAILURE);	// v. pthread_exit
+			exit(EXIT_FAILURE);
 		}             
   		if(FD_ISSET(*sfd, &rfds)){
 			int refGlobPage_fd;
@@ -348,17 +348,17 @@ int exchangeMessage(int *sfd, int thread_no, char *IP_ADDRESS, const char *Serve
 			// open and create file "ip-index-html"
 			if((refGlobPage_fd = open("ref-glob-page", O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR)) == -1){
 				ERROR("open");
-				exit(EXIT_FAILURE);	// v. pthread_exit
+				exit(EXIT_FAILURE);
 			}
 						
 			// write IP address on first line of the file
 			if(write(refGlobPage_fd, IP_ADDRESS, strlen(IP_ADDRESS)) == -1){
 				ERROR("write");
-				exit(EXIT_FAILURE);	// v. pthread_exit
+				exit(EXIT_FAILURE);
 			}
 			if(write(refGlobPage_fd, "\n", 1) == -1){
 				ERROR("write");
-				exit(EXIT_FAILURE);	// v. pthred_exit or _exit
+				exit(EXIT_FAILURE);
 			}
 
 			// write URLLink on second line
@@ -389,7 +389,7 @@ int exchangeMessage(int *sfd, int thread_no, char *IP_ADDRESS, const char *Serve
 
 						if(write(STDOUT_FILENO, "THREAD 2: Resource temporary anavailable, continuing...\n", 56) == -1){
 							ERROR("write");
-							exit(EXIT_FAILURE);	// v. pthread_exit
+							exit(EXIT_FAILURE);
 						}
 						sleep(2);
 						continue;	
@@ -398,13 +398,13 @@ int exchangeMessage(int *sfd, int thread_no, char *IP_ADDRESS, const char *Serve
 						continue;
 					}
 					ERROR("read");
-					exit(EXIT_FAILURE);	// v. pthread_exit
+					exit(EXIT_FAILURE);
 				}
 								
 				// write into the file
 				if(write(refGlobPage_fd, buf_read, read_count) != read_count){
 					ERROR("write");
-					exit(EXIT_FAILURE);	// v. pthread_exit
+					exit(EXIT_FAILURE);
 				}
 				//this should be redundant under normal conditions (e.g. a recent kernel version) as I've already specified the O_DSYNC flag at open()
 				/*if(fdatasync(refGlobPage_fd) == -1){
@@ -415,11 +415,11 @@ int exchangeMessage(int *sfd, int thread_no, char *IP_ADDRESS, const char *Serve
 							
 			if(write(STDOUT_FILENO, "THREAD 2: Written to ref-glob-page\n", 35) == -1){
 				ERROR("write");
-				exit(EXIT_FAILURE);		// v. pthread_exit, _exit...
+				exit(EXIT_FAILURE);
 			}	
 			if(close(refGlobPage_fd) == -1){
 				ERROR("close");
-				exit(EXIT_FAILURE);		// v. pthread_exit or _exit
+				exit(EXIT_FAILURE);
 			}
 			return 0;	// Normal return
 		}
@@ -605,17 +605,17 @@ void *rutina_fir1(void *params)
 			if(!exchangeMessage(&sockfd, 1, IP1, NULL, NULL)){
 				if(system("./parseIPIndexHtml.pl") == -1){
 					ERROR("system");
-					exit(EXIT_FAILURE);		// v. pthread_exit
+					exit(EXIT_FAILURE);
 				}
 			
 				if((shutdown(sockfd, SHUT_RDWR) == -1) && (errno != ECONNRESET) && (errno != ENOTCONN)){
 						ERROR("shutdown");
-						exit(EXIT_FAILURE);		// v. phread_exit
+						exit(EXIT_FAILURE);
 				}
 			}
 			if((close(sockfd) == -1)){
 				ERROR("close");
-				exit(EXIT_FAILURE);		// v. phread_exit
+				exit(EXIT_FAILURE);
 			}
 		}
 
@@ -785,11 +785,11 @@ void *rutina_fir2(void *params)
 						if(!exchangeMessage(&sockfd, 2, IP2, Server, URI)){
                         				if(system("./parseRefGlobv2.pl") == -1){
                                         			ERROR("system");
-                                                                exit(EXIT_FAILURE);		// v. pthread_exit
+                                                                exit(EXIT_FAILURE);
                                                         }
                                                         if((shutdown(sockfd, SHUT_RDWR) == -1) && (errno != ECONNRESET) && (errno != ENOTCONN)){
                                                                 ERROR("shutdown");
-                                                                 exit(EXIT_FAILURE);		// v. phread_exit
+                                                                 exit(EXIT_FAILURE);
                                                         }
 						}
 						if(close(sockfd) == -1){
