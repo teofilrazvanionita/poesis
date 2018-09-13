@@ -108,7 +108,7 @@ print "THREAD 2: Summary information: ", $meta_contents || $h1 || $title ||  "No
 foreach my $legatura (keys %linkuri){
 	print "THREAD 2: $legatura\n";
 }
-print "Data: ", $datastring || "No DATA information found.\n"; 
+print "Data: ", "$datastring\n" || "No DATA information found.\n"; 
 
 close RESULT or die "Error closing filehandle: $!";
 
