@@ -538,6 +538,7 @@ void getIpAddressFromHostName(char *IP, const char *WS)
 	struct addrinfo hints; 
 	struct addrinfo *result, *rp;;
 	int s;
+	int k = 0;
 	char *p;
 
 	memset(&hints, 0, sizeof(struct addrinfo));
@@ -567,7 +568,15 @@ void getIpAddressFromHostName(char *IP, const char *WS)
 		exit(EXIT_FAILURE);
 	}
 
-	if((s = getaddrinfo(p, service, &hints, &result)) != 0 && s != EAI_SYSTEM && s != EAI_NONAME){
+AGAIN:	if((s = getaddrinfo(p, service, &hints, &result)) != 0 && s != EAI_SYSTEM && s != EAI_NONAME){
+		if(s == EAI_AGAIN){
+			k++;
+			if(k >= 5){
+				*IP = '\0';
+				return;
+			}
+			goto AGAIN;
+		}
 		if(write(STDERR_FILENO, "ERROR from getaddrinfo(): ", 26) == -1){
 			ERROR("write");
 			exit(EXIT_FAILURE);

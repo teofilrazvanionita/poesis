@@ -1,2 +1,2 @@
 # poesis
-A simple search engine
+A simple, self-expanding, search engine
