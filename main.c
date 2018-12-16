@@ -476,7 +476,7 @@ int verifyExistance(char *hiperlink)
 	MYSQL_RES *res;
 	MYSQL_ROW row;
         
-        char *server = "localhost";
+        char *server = "192.168.6.1";
 	char *user = "razvan";
 	char *password = "password";
 	char *database = "poesis";
@@ -656,7 +656,7 @@ void *rutina_fir2(void *params)
 
 	my_bool reconnect = 1;	// enable auto-reconnect
 
-	char *server = "localhost";
+	char *server = "192.168.6.1";
 	char *user = "razvan";
 	char *password = "password";
 	char *database = "poesis";
