@@ -568,7 +568,7 @@ void getIpAddressFromHostName(char *IP, const char *WS)
 		exit(EXIT_FAILURE);
 	}
 
-AGAIN:	if((s = getaddrinfo(p, service, &hints, &result)) != 0 && s != EAI_SYSTEM && s != EAI_NONAME && s != EAI_ADDRFAMILY){
+AGAIN:	if((s = getaddrinfo(p, service, &hints, &result)) != 0 && s != EAI_SYSTEM && s != EAI_NONAME){
 		if(s == EAI_AGAIN){
 			k++;
 			if(k >= 5){
@@ -586,7 +586,7 @@ AGAIN:	if((s = getaddrinfo(p, service, &hints, &result)) != 0 && s != EAI_SYSTEM
 			exit(EXIT_FAILURE);
 		}
 		
-		exit(EXIT_FAILURE);
+//		exit(EXIT_FAILURE);
 	}
 
 	for(rp = result; rp != NULL; rp = rp->ai_next){
