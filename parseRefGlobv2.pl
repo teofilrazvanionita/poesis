@@ -104,11 +104,16 @@ while(<RESULT>){
 
 $p->eof;
 
-print "THREAD 2: Summary information: ", $meta_contents || $h1 || $title ||  "No summary information found.", "\n";
-foreach my $legatura (keys %linkuri){
-	print "THREAD 2: $legatura\n";
-}
-print "Data: ", "$datastring\n" || "No DATA information found.\n"; 
+#print "THREAD 2: Summary information: ", $meta_contents || $h1 || $title ||  "No summary information found.", "\n";
+#foreach my $legatura (keys %linkuri){
+#	print "THREAD 2: $legatura\n";
+#
+#}
+#print "THREAD 2: numar de hiperlinkuri gasite: %linkuri\n";
+#print "Data: ", "$datastring\n" || "No DATA information found.\n"; 
+
+my $size = keys %linkuri;
+print "THREAD 2: numar de linkuri gasite: $size\n";
 
 close RESULT or die "Error closing filehandle: $!";
 
